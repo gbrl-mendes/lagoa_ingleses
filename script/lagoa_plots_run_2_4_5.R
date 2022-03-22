@@ -3,7 +3,7 @@ library(ggplot2)
 
 #Obtencao dos dados
 {
-  raw_results_tbl <- read.csv("~/projetos/lagoa_ingleses/tabelas/raw/run_2_4_5_lagoa_ingleses_csv.csv",sep = ",")
+  raw_results_tbl <- read.csv("~/projetos/lagoa_ingleses/tabelas/raw/run_2_4_5_lagoa_ingleses_v2.csv",sep = ",")
 }
 
 #Criacao da lista com os possiveis nomes atribuidos as ASVs
@@ -12,7 +12,7 @@ raw_results_tbl %>% colnames()
 raw_results_tbl %>% colnames() %>% paste0(collapse = '",\n"') %>% cat()
 }
 
-#Agrapamento da ASVs que possuem os mesmos atributos abaixo
+#Agrupamento da ASVs que possuem os mesmos atributos abaixo
 {
 grouped_by_ID_tbl <- raw_results_tbl %>%
   select(c(
@@ -21,6 +21,7 @@ grouped_by_ID_tbl <- raw_results_tbl %>%
     # "Group",
     "Expedition",
     # "Coleta",
+    "Year",
     "Sample.Name",
     "File_name",
     # "OTU",
@@ -37,13 +38,13 @@ grouped_by_ID_tbl <- raw_results_tbl %>%
   summarize(`Sample` = unique(Sample),
             `Curated.ID` = unique(Curated.ID),
             `Expedition` = unique(Expedition),
+            `Year` = unique(Year),
             `Point` = unique(Point),
             `Sample.Name` = unique(Sample.Name),
             `File_name` = unique(File_name),
             `RRA` = sum(Relative.abundance.on.sample)) %>%
   ungroup()
 }
-
 
 #organizar as especies
 {
@@ -52,18 +53,19 @@ grouped_by_ID_tbl$Sample %>% unique()%>% sort() %>%  paste0(collapse = '",\n"') 
 }
 
 #organizar as ordem das especies usando fatores
+
+  #com todas as identificacoes
 {
 grouped_by_ID_tbl <- grouped_by_ID_tbl %>%
   mutate(Curated.ID = factor(Curated.ID,
                              levels = rev(c(
-                                        "Acinocheirodon melanogramma",
                                         "Actinopteri",
+                                        "Acinocheirodon melanogramma",
                                         "Astyanax",
                                         "Astyanax fasciatus",
                                         "Astyanax lacustris",
                                         "Brycon orthotaenia",
                                         "Bryconamericus stramineus",
-                                        "Cavia magna",
                                         "Characidae",
                                         "Characidium",
                                         "Characiformes",
@@ -104,7 +106,7 @@ grouped_by_ID_tbl <- grouped_by_ID_tbl %>%
                                         "Tilapia rendalli",
                                         "Wertheimeria maculata",
                                         #não-peixes
-                                        "NA",
+                                        "Cavia magna",
                                         "Cutibacterium acnes",
                                         "Bos taurus",
                                         "Canis familiaris",
@@ -119,7 +121,75 @@ grouped_by_ID_tbl <- grouped_by_ID_tbl %>%
                                         ))))
 }
 
+#sem os grupos
+{
+  grouped_by_ID_tbl <- grouped_by_ID_tbl %>%
+    mutate(Curated.ID = factor(Curated.ID,
+                              levels = rev(c(
+                                 #"Actinopteri",
+                                 "Acinocheirodon melanogramma",
+                                 #"Astyanax",
+                                 "Astyanax fasciatus",
+                                 "Astyanax lacustris",
+                                 "Brycon orthotaenia",
+                                 "Bryconamericus stramineus",
+                                 #"Characidae",
+                                 #"Characidium",
+                                 #"Characiformes",
+                                 #"Cichla",
+                                 #"Cichlidae",
+                                 "Colossoma macropomum",
+                                 "Coptodon zillii",
+                                 "Eigenmannia virescens",
+                                 "Gymnotus carapo",
+                                 "Hemigrammus gracilis",
+                                 "Hemigrammus marginatus",
+                                 #"Hoplias",
+                                 "Hoplias intermedius",
+                                 "Hoplias malabaricus",
+                                 "Hypomasticus steindachneri",
+                                 "Leporellus vittatus",
+                                 "Leporinus piau",
+                                 "Leporinus reinhardti",
+                                 "Leporinus taeniatus",
+                                 "Megaleporinus elongatus",
+                                 "Megaleporinus garmani",
+                                 "Moenkhausia costae",
+                                 "Myleus micans",
+                                 "Oreochromis niloticus",
+                                 "Orthospinus franciscensis",
+                                 #"Pimelodus",
+                                 "Pimelodus fur",
+                                 "Pimelodus maculatus",
+                                 "Pimelodus pohli",
+                                 "Planaltina myersi",
+                                 "Poecilia reticulata",
+                                 "Prochilodus costatus",
+                                 "Pseudoplatystoma corruscans",
+                                 "Pygocentrus piraya",
+                                 "Rhamdia quelen",
+                                 #"Salmo salar",
+                                 "Serrasalmus brandtii",
+                                 "Tilapia rendalli",
+                                 "Wertheimeria maculata",
+                                 #não-peixes
+                                 "Cavia magna",
+                                 "Cutibacterium acnes",
+                                 "Bos taurus",
+                                 "Canis familiaris",
+                                 "Didelphis albiventris (Gamba)",
+                                 "Homo sapiens",
+                                 "Hydrochaeris hydrochaeris (Capivara)",
+                                 "Nannopterum brasilianus",
+                                 "Oryctolagus cuniculus (Coelho-bravo)",
+                                 "Progne chalybea (Andorinha-grande)",
+                                 "Sus scrofa"
+                                 
+                               ))))
+}
+
 #Criacao do Tile Plot das amostras da Lagoa dos Ingleses sequenciadas nas corridas 2, 4 e 5
+#exibindo  por ponto, por mês
 {
 grouped_by_ID_tbl %>%
   #transformando variaveis categoricas em fatores com niveis
@@ -147,13 +217,23 @@ grouped_by_ID_tbl %>%
   mutate(Point = factor(Point)) %>%
   mutate(File_name = factor(File_name)) %>%
   mutate(Expedition = factor(Expedition)) %>%
+ 
   #filtrando apenas o que vc quer mostras
   filter(!Curated.ID %in% c("Astyanax",
                             "Characidae",
                             "Cichlidae",
                             "Hoplias",
                             "Pimelodus")) %>%
-    ggplot(aes(y = Curated.ID,
+  
+  #retirando as ASVs "espurias", com abundancia menor que 0.01
+  filter(RRA >=0.01) %>%
+  
+  #retirar os NA
+  filter(!is.na(Curated.ID)) %>%
+    
+    #Tile plot
+   
+     ggplot(aes(y = Curated.ID,
              x = Point,
              fill = RRA,
              # col = Expedition,
@@ -167,9 +247,86 @@ grouped_by_ID_tbl %>%
   # facet_grid(~Point,
   #            scales = "free_x",
   #            space = "free_x") +
+  #facet_grid(~Year,
+  #            scales = "free_x",
+  #            space = "free_x") +
   labs(fill='Relative Read\nAbundance (%)',
        x = "Amostras",
        y= "Espécies") +
-  geom_hline(yintercept = c(9.5)) +
-  scale_fill_continuous(type = "viridis")
+  geom_hline(yintercept = c(7.5)) +
+  scale_fill_continuous(type = "viridis") +
+       theme(text=element_text(size = 10, face = "bold"))
+    
 }
+
+#Criacao do Tile Plot das amostras da Lagoa dos Ingleses sequenciadas nas corridas 2, 4 e 5
+#exibindo  por ano apenas
+{
+  grouped_by_ID_tbl %>%
+    #transformando variaveis categoricas em fatores com niveis
+    mutate(Expedition = factor(Expedition)) %>%
+    mutate(Sample = factor(Sample,
+                           levels = c("L1_nov21",
+                                      "L1_out21",
+                                      "L2_nov21",
+                                      "L2_out21",
+                                      "L3_nov21",
+                                      "L3_out21",
+                                      "L4_nov21",
+                                      "L4_out21",
+                                      "L1-neo-mi",
+                                      "L2 Dez/20",
+                                      "L2 Nov/20"
+                                      
+                           ))) %>% mutate(Expedition = factor(Expedition,
+                                                              levels = c("Nov_Dec/20",
+                                                                         "Nov/20",
+                                                                         "Dec/20",
+                                                                         "out/21",
+                                                                         "Nov/21"
+                                                              ))) %>%
+    mutate(Point = factor(Point)) %>%
+    mutate(File_name = factor(File_name)) %>%
+    mutate(Expedition = factor(Expedition)) %>%
+    
+    #filtrando apenas o que vc quer mostras
+    filter(!Curated.ID %in% c("Astyanax",
+                              "Characidae",
+                              "Cichlidae",
+                              "Hoplias",
+                              "Pimelodus")) %>%
+    
+    #retirando as ASVs "espurias", com abundancia menor que 0.01
+    filter(RRA >=0.01) %>%
+    
+    #retirar os NA
+    filter(!is.na(Curated.ID)) %>%
+    
+    #Tile plot
+    
+    ggplot(aes(y = Curated.ID,
+               x = Year,
+               fill = RRA,
+               # col = Expedition,
+    )) +
+    scale_x_continuous(breaks = 0:2100) +
+    # geom_tile() +
+    geom_tile() +
+    # scale_color_manual()+
+    #facet_grid(~Expedition,
+    #           scales = "free_x",
+    #           space = "free_x") +
+    # facet_grid(~Point,
+    #            scales = "free_x",
+    #            space = "free_x") +
+    #facet_grid(~Year,
+    #            scales = "free_x",
+    #            space = "free_x") +
+    labs(fill='Relative Read\nAbundance (%)',
+         x = "Amostras",
+         y= "Espécies") +
+    geom_hline(yintercept = c(7.5)) +
+    scale_fill_continuous(type = "viridis") +
+    theme(text=element_text(size = 10, face = "bold"))
+}
+
