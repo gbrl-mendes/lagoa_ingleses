@@ -4,3 +4,6 @@
 .Ruserdata
 *.pdf
 *.png
+*.Rproj
+*.csv
+house_keeping
