@@ -3,7 +3,7 @@ library(ggplot2)
 
 #Obtencao dos dados
 {
-  raw_results_tbl <- read.csv("~/projetos/lagoa_ingleses/tabelas/raw/run_2_4_5_lagoa_ingleses_v2.csv",sep = ",")
+  raw_results_tbl <- read.csv("~/projetos/lagoa_ingleses/tabelas/raw/08mar22/v2_ed_li_22mar22-todas_info_da_analise_2022-04-08.csv",sep = ";")
 }
 
 #Criacao da lista com os possiveis nomes atribuidos as ASVs
