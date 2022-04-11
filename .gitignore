@@ -1,5 +1,6 @@
 .Rproj.user
 .Rhistory
+*.RData
 .RData
 .Ruserdata
 *.pdf
@@ -10,5 +11,3 @@
 house_keeping
 lagoa_ingleses.Rproj
 environment_lagoa_plots.RData
-eDNA_run5_22_dez_lagoa_ingleses_csv.csv
-run_2_4_5_22_dez_lagoa_ingleses_v2.csv
