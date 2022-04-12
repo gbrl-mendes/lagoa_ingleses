@@ -4,19 +4,7 @@ library(ggplot2)
 #Obtencao dos dados
 {
   raw_results_tbl <- read.csv("~/projetos/lagoa_ingleses/tabelas/raw/08mar22/v3_ed_li_22mar22-todas_info_da_analise_2022-04-08.csv",
-                              sep = ";",header = T,check.names = F,dec = ",")
-}
-
-#Trocando os nomes dos animais não-peixes
-
-{
-  raw_results_tbl[raw_results_tbl$`Curated ID` == "Bos taurus",] <- "Bos taurus (Boi)"
-  raw_results_tbl[raw_results_tbl$`Curated ID` == "Canis familiaris"] <- "Canis familiaris (Cachorro-doméstico)"
-  raw_results_tbl[raw_results_tbl$`Curated ID` == "Cavia magna"] <- "Cavia magna (Preá)"
-  raw_results_tbl[raw_results_tbl$`Curated ID` == "Hydrochaeris hydrochaeris"] <- "Hydrochaeris hydrochaeris (Capivara)"
-  raw_results_tbl[raw_results_tbl$`Curated ID` == "Nannopterum brasilianus"] <- "Nannopterum brasilianus (Biguá)"
-  raw_results_tbl[raw_results_tbl$`Curated ID` == "Progne chalybea"] <- "Progne chalybea (Andorinha-grande)"
-  raw_results_tbl[raw_results_tbl$`Curated ID` == "Sus scrofa"] <- "Sus scrofa (Javali)"
+                              sep = ";", header = T, check.names = F, dec = ",")
 }
 
 #Criacao da lista com os possiveis nomes atribuidos as ASVs
@@ -57,6 +45,17 @@ library(ggplot2)
     ungroup()
 }
 
+#Trocando os nomes dos animais não-peixes
+{
+  grouped_by_ID_tbl$`Curated ID`[grouped_by_ID_tbl$`Curated ID` == "Bos taurus"] <- "Bos taurus (Boi)"
+  grouped_by_ID_tbl$`Curated ID`[grouped_by_ID_tbl$`Curated ID` == "Canis familiaris"] <- "Canis familiaris (Cachorro doméstico)"
+  grouped_by_ID_tbl$`Curated ID`[grouped_by_ID_tbl$`Curated ID` == "Cavia magna"] <- "Cavia magna (Preá)"
+  grouped_by_ID_tbl$`Curated ID`[grouped_by_ID_tbl$`Curated ID` == "Hydrochaeris hydrochaeris"] <- "Hydrochaeris hydrochaeris (Capivara)"
+  grouped_by_ID_tbl$`Curated ID`[grouped_by_ID_tbl$`Curated ID` == "Nannopterum brasilianus"] <- "Nannopterum brasilianus (Biguá)"
+  grouped_by_ID_tbl$`Curated ID`[grouped_by_ID_tbl$`Curated ID` == "Progne chalybea"] <- "Progne chalybea (Andorinha-grande)"
+  grouped_by_ID_tbl$`Curated ID`[grouped_by_ID_tbl$`Curated ID` == "Sus scrofa"] <- "Sus scrofa (Javali)"
+}
+
 #organizar as especies
 {
   grouped_by_ID_tbl$`Curated ID` %>% unique()%>% sort() %>%  paste0(collapse = '",\n"') %>% cat()
@@ -69,128 +68,76 @@ library(ggplot2)
 {
   grouped_by_ID_tbl <- grouped_by_ID_tbl %>%
     mutate(Curated.ID = factor(Curated.ID,
-                               levels = rev(c( "Astyanax fasciatus", 
-                                               "Astyanax lacustris",
-                                               "Brycon orthotaenia",
-                                               "Bryconamericus stramineus",
-                                               "Colossoma macropomum",
-                                               "Coptodon zillii",
-                                               "Eigenmannia virescens",
-                                               "Gymnotus carapo",
-                                               "Hemigrammus marginatus",
-                                               "Hoplias intermedius",
-                                               "Hoplias malabaricus",
-                                               "Hypomasticus steindachneri",
-                                               "Leporellus vittatus",
-                                               "Leporinus piau",
-                                               "Leporinus reinhardti",
-                                               "Leporinus taeniatus",
-                                               "Megaleporinus elongatus",
-                                               "Megaleporinus garmani",
-                                               "Moenkhausia costae",
-                                               "Myleus micans",
-                                               "Oreochromis niloticus",
-                                               "Orthospinus franciscensis",
-                                               "Pimelodus fur",
-                                               "Pimelodus maculatus",
-                                               "Pimelodus pohli",
-                                               "Planaltina myersi",
-                                               "Poecilia reticulata",
-                                               "Prochilodus costatus",
-                                               "Pseudoplatystoma corruscans",
-                                               "Pygocentrus piraya",
-                                               "Rhamdia quelen",
-                                               "Serrasalmus brandtii",
-                                               "Tilapia rendalli",
-                                               "Wertheimeria maculata",
-                                               #não-peixes
-                                               "Bos taurus",
-                                               "Canis familiaris",
-                                               "Cavia magna",
-                                               "Cutibacterium acnes",
-                                               "Homo sapiens",
-                                               "Hydrochaeris hydrochaeris (Capivara)",
-                                               "Nannopterum brasilianus",
-                                               "Oryctolagus cuniculus (Coelho-bravo)",
+                               levels = rev(c( #"",
+                                 "Astyanax",
+                                 "Astyanax fasciatus",
+                                 "Astyanax lacustris",
+                                 "Brycon orthotaenia",
+                                 "Bryconamericus stramineus",
+                                 "Characidae",
+                                 "Characidium",
+                                 "Cichlidae",
+                                 "Colossoma macropomum",
+                                 "Eigenmannia virescens",
+                                 "Gymnotus carapo",
+                                 "Hemigrammus gracilis",
+                                 "Hemigrammus marginatus",
+                                 "Hoplias",
+                                 "Hoplias intermedius",
+                                 "Hoplias malabaricus",
+                                 "Hoplias sp",
+                                 "Hypomasticus steindachneri",
+                                 "Leporellus vittatus",
+                                 "Leporinus piau",
+                                 "Leporinus reinhardti",
+                                 "Leporinus taeniatus",
+                                 "Loricariidae",
+                                 "Megaleporinus elongatus",
+                                 "Megaleporinus garmani",
+                                 "Moenkhausia costae",
+                                 "Myleus micans",
+                                 "Oreochromis niloticus",
+                                 "Oreochromis niloticus ",
+                                 "Orthospinus franciscensis",
+                                 "Phalloceros sp",
+                                 "Pimelodus",
+                                 "Pimelodus fur",
+                                 "Pimelodus maculatus",
+                                 "Pimelodus pohli",
+                                 "Planaltina myersi",
+                                 "Prochilodus costatus",
+                                 "Pseudoplatystoma corruscans",
+                                 "Pygocentrus piraya",
+                                 "Rhamdia quelen",
+                                 "Salmo salar",
+                                 "Serrasalmus brandtii",
+                                 "Tilapia rendalli",
+                                 "Wertheimeria maculata",
+                                 #não-peixes
+                                 "Bos taurus (Boi)",
+                                 "Canis familiaris (Cachorro doméstico)",
+                                 "Cavia magna (Preá)",
+                                 "Hydrochaeris hydrochaeris (Capivara)",
+                                 "Nannopterum brasilianus (Biguá)",
+                                 "Progne chalybea (Andorinha-grande)",
+                                 "Sus scrofa (Javali)"
                                ))))
 }
-#"",
-"Astyanax",
-"Astyanax fasciatus",
-"Astyanax lacustris",
-"Brycon orthotaenia",
-"Bryconamericus stramineus",
-#"Characidae",
-#"Characidium",
-#"Cichlidae",
-"Colossoma macropomum",
-"Eigenmannia virescens",
-"Gymnotus carapo",
-"Hemigrammus gracilis",
-"Hemigrammus marginatus",
-#"Hoplias",
-"Hoplias intermedius",
-"Hoplias malabaricus",
-"Hoplias sp",
-"Hypomasticus steindachneri",
-"Leporellus vittatus",
-"Leporinus piau",
-"Leporinus reinhardti",
-"Leporinus taeniatus",
-#"Loricariidae",
-"Megaleporinus elongatus",
-"Megaleporinus garmani",
-"Moenkhausia costae",
-"Myleus micans",
-"Oreochromis niloticus",
-"Oreochromis niloticus ",
-"Orthospinus franciscensis",
-"Phalloceros sp",
-#"Pimelodus",
-"Pimelodus fur",
-"Pimelodus maculatus",
-"Pimelodus pohli",
-"Planaltina myersi",
-"Prochilodus costatus",
-"Pseudoplatystoma corruscans",
-"Pygocentrus piraya",
-"Rhamdia quelen",
-"Salmo salar",
-"Serrasalmus brandtii",
-"Tilapia rendalli",
-"Wertheimeria maculata
-
-#não-peixes
-
-#"Bos taurus",
-#"Canis familiaris",
-#"Cavia magna",
-#"Homo sapiens",
-#"Hydrochaeris hydrochaeris",
-#"Nannopterum brasilianus",
-#"Oryctolagus cuniculus",
-#"Progne chalybea",
-#"Sus scrofa",
 
 #sem os grupos
 {
   grouped_by_ID_tbl <- grouped_by_ID_tbl %>%
-    mutate(Curated.ID = factor(Curated.ID,
-                               levels = rev(c(
-                                 #"Actinopteri",
-                                 "Acinocheirodon melanogramma",
-                                 #"Astyanax",
+    mutate(Curated ID = factor(Curated ID,
+                               levels = rev(c(#"",
+                                 "Astyanax",
                                  "Astyanax fasciatus",
                                  "Astyanax lacustris",
                                  "Brycon orthotaenia",
                                  "Bryconamericus stramineus",
                                  #"Characidae",
                                  #"Characidium",
-                                 #"Characiformes",
-                                 #"Cichla",
                                  #"Cichlidae",
                                  "Colossoma macropomum",
-                                 "Coptodon zillii",
                                  "Eigenmannia virescens",
                                  "Gymnotus carapo",
                                  "Hemigrammus gracilis",
@@ -198,45 +145,43 @@ library(ggplot2)
                                  #"Hoplias",
                                  "Hoplias intermedius",
                                  "Hoplias malabaricus",
+                                 "Hoplias sp",
                                  "Hypomasticus steindachneri",
                                  "Leporellus vittatus",
                                  "Leporinus piau",
                                  "Leporinus reinhardti",
                                  "Leporinus taeniatus",
+                                 #"Loricariidae",
                                  "Megaleporinus elongatus",
                                  "Megaleporinus garmani",
                                  "Moenkhausia costae",
                                  "Myleus micans",
                                  "Oreochromis niloticus",
+                                 "Oreochromis niloticus ",
                                  "Orthospinus franciscensis",
+                                 "Phalloceros sp",
                                  #"Pimelodus",
                                  "Pimelodus fur",
                                  "Pimelodus maculatus",
                                  "Pimelodus pohli",
                                  "Planaltina myersi",
-                                 "Poecilia reticulata",
                                  "Prochilodus costatus",
                                  "Pseudoplatystoma corruscans",
                                  "Pygocentrus piraya",
                                  "Rhamdia quelen",
-                                 #"Salmo salar",
+                                 "Salmo salar",
                                  "Serrasalmus brandtii",
                                  "Tilapia rendalli",
                                  "Wertheimeria maculata",
                                  #não-peixes
-                                 "Cavia magna",
-                                 "Cutibacterium acnes",
-                                 "Bos taurus",
-                                 "Canis familiaris",
-                                 "Didelphis albiventris (Gamba)",
-                                 "Homo sapiens",
+                                 "Bos taurus (Boi)",
+                                 "Canis familiaris (Cachorro doméstico)",
+                                 "Cavia magna (Preá)",
                                  "Hydrochaeris hydrochaeris (Capivara)",
-                                 "Nannopterum brasilianus",
-                                 "Oryctolagus cuniculus (Coelho-bravo)",
+                                 "Nannopterum brasilianus (Biguá)",
                                  "Progne chalybea (Andorinha-grande)",
-                                 "Sus scrofa"
-                                 
-                               ))))
+                                 "Sus scrofa (Javali)"
+                                 ))))
 }
 
 #Criacao do Tile Plot das amostras da Lagoa dos Ingleses sequenciadas nas corridas 2, 4 e 5
