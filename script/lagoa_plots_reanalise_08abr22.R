@@ -114,6 +114,7 @@ library(ggplot2)
                                  "Tilapia rendalli",
                                  "Wertheimeria maculata",
                                  #não-peixes
+                                 "Homo sapiens",
                                  "Bos taurus (Boi)",
                                  "Canis familiaris (Cachorro doméstico)",
                                  "Cavia magna (Preá)",
@@ -124,67 +125,8 @@ library(ggplot2)
                                ))))
 }
 
-#sem os grupos
-{
-  grouped_by_ID_tbl <- grouped_by_ID_tbl %>%
-    mutate(Curated.ID = factor(Curated.ID,
-                               levels = rev(c(#"",
-                                 #"Astyanax",
-                                 "Astyanax fasciatus",
-                                 "Astyanax lacustris",
-                                 "Brycon orthotaenia",
-                                 "Bryconamericus stramineus",
-                                 #"Characidae",
-                                 #"Characidium",
-                                 #"Cichlidae",
-                                 "Colossoma macropomum",
-                                 "Eigenmannia virescens",
-                                 "Gymnotus carapo",
-                                 "Hemigrammus gracilis",
-                                 "Hemigrammus marginatus",
-                                 #"Hoplias",
-                                 "Hoplias intermedius",
-                                 "Hoplias malabaricus",
-                                 "Hoplias sp",
-                                 "Hypomasticus steindachneri",
-                                 "Leporellus vittatus",
-                                 "Leporinus piau",
-                                 "Leporinus reinhardti",
-                                 "Leporinus taeniatus",
-                                 #"Loricariidae",
-                                 "Megaleporinus elongatus",
-                                 "Megaleporinus garmani",
-                                 "Moenkhausia costae",
-                                 "Myleus micans",
-                                 "Oreochromis niloticus",
-                                 "Oreochromis niloticus ",
-                                 "Orthospinus franciscensis",
-                                 "Phalloceros sp",
-                                 #"Pimelodus",
-                                 "Pimelodus fur",
-                                 "Pimelodus maculatus",
-                                 "Pimelodus pohli",
-                                 "Planaltina myersi",
-                                 "Prochilodus costatus",
-                                 "Pseudoplatystoma corruscans",
-                                 "Pygocentrus piraya",
-                                 "Rhamdia quelen",
-                                 "Salmo salar",
-                                 "Serrasalmus brandtii",
-                                 "Tilapia rendalli",
-                                 "Wertheimeria maculata",
-                                 #não-peixes
-                                 "Bos taurus (Boi)",
-                                 "Canis familiaris (Cachorro doméstico)",
-                                 "Cavia magna (Preá)",
-                                 "Hydrochaeris hydrochaeris (Capivara)",
-                                 "Nannopterum brasilianus (Biguá)",
-                                 "Progne chalybea (Andorinha-grande)",
-                                 "Sus scrofa (Javali)"
-                                 ))))
-}
-
 #Criacao do Tile Plot das amostras da Lagoa dos Ingleses sequenciadas nas corridas 2, 4 e 5
+
 #exibindo  por ponto, por mês
 {
   grouped_by_ID_tbl %>%
@@ -193,10 +135,10 @@ library(ggplot2)
     mutate(Sample = factor(Sample,
                            levels = c("L1_nov_dec_20_mi", 
                                       "L1_nov_dec_20_neo", 
+                                      "L2_dez20", 
+                                      "L2_nov20",
                                       "L1_nov21", 
                                       "L1_out21", 
-                                      "L2_dez20", 
-                                      "L2_nov20", 
                                       "L2_nov21", 
                                       "L2_out21", 
                                       "L3_nov21", 
@@ -217,24 +159,25 @@ library(ggplot2)
     #filtrando apenas o que vc quer mostras
     filter(!Curated.ID %in% c("Astyanax",
                               "Characidae",
+                              "Characidium",
                               "Cichlidae",
                               "Hoplias",
-                              "Pimelodus")) %>%
-    
-    #retirando as ASVs "espurias", com abundancia menor que 0.01
-    filter(RRA >=0.01) %>%
+                              "Loricariidae",
+                              "Pimelodus",
+                              "Salmo salar")) %>%
     
     #retirar os NA
     filter(!is.na(Curated.ID)) %>%
     
-    #Tile plot
+    #retirando as ASVs "espurias", com abundancia menor que 0.01
+    filter(RRA >=0.01) %>%
     
+    #Tile plot
     ggplot(aes(y = Curated.ID,
                x = Point,
                fill = RRA,
                # col = Coleta,
     )) +
-    # geom_tile() +
     geom_tile() +
     # scale_color_manual()+
     facet_grid(~Coleta,
@@ -249,43 +192,39 @@ library(ggplot2)
     labs(fill='Relative Read\nAbundance (%)',
          x = "Amostras",
          y= "Espécies") +
-    geom_hline(yintercept = c(7.5)) +
-    # scale_fill_continuous(type = "viridis") +
-    # scale_fill_continuous(viridis::turbo(n=9)) +
-    viridis::scale_fill_viridis(
+    geom_hline(yintercept = c(6.5)) +
+      viridis::scale_fill_viridis(
       alpha = 1,
       begin = 0.75,
       end = 0,
       direction = 1,
       discrete = FALSE,
-      option = "B"
+      option = "D"
     )
     theme(text=element_text(size = 10, face = "bold"))
   
 }
 
-scales::show_col(viridis::turbo(n=9))
-scales::show_col(viridis::inferno(n=9))
-scales::show_col(viridis::magma(n=9))
-
 #Criacao do Tile Plot das amostras da Lagoa dos Ingleses sequenciadas nas corridas 2, 4 e 5
 #exibindo  por ano apenas
 {
   grouped_by_ID_tbl %>%
+    
     #transformando variaveis categoricas em fatores com niveis
     mutate(Coleta = factor(Coleta)) %>%
     mutate(Sample = factor(Sample,
-                           levels = c("L1_nov21",
-                                      "L1_out21",
-                                      "L2_nov21",
-                                      "L2_out21",
-                                      "L3_nov21",
-                                      "L3_out21",
-                                      "L4_nov21",
-                                      "L4_out21",
-                                      "L1-neo-mi",
-                                      "L2 Dez/20",
-                                      "L2 Nov/20"
+                           levels = c("L1_nov_dec_20_mi", 
+                                      "L1_nov_dec_20_neo", 
+                                      "L2_dez20", 
+                                      "L2_nov20",
+                                      "L1_nov21", 
+                                      "L1_out21", 
+                                      "L2_nov21", 
+                                      "L2_out21", 
+                                      "L3_nov21", 
+                                      "L3_out21", 
+                                      "L4_nov21", 
+                                      "L4_out21" 
                                       
                            ))) %>% mutate(Coleta = factor(Coleta,
                                                               levels = c("Nov_Dec/20",
@@ -299,26 +238,29 @@ scales::show_col(viridis::magma(n=9))
     mutate(Coleta = factor(Coleta)) %>%
     
     #filtrando apenas o que vc quer mostras
-    filter(!Curated.ID %in% c("Astyanax",
-                              "Characidae",
-                              "Cichlidae",
-                              "Hoplias",
-                              "Pimelodus")) %>%
+    # filter(!Curated.ID %in% c("Astyanax",
+    #                           "Characidae",
+    #                           "Characidium",
+    #                           "Cichlidae",
+    #                           "Hoplias",
+    #                           "Loricariidae",
+    #                           "Pimelodus",
+    #                           "Salmo salar")) %>%
     
     #retirando as ASVs "espurias", com abundancia menor que 0.01
-    filter(RRA >=0.01) %>%
+    # filter(RRA >=0.01) %>%
     
     #retirar os NA
     filter(!is.na(Curated.ID)) %>%
     
     #Tile plot
-    
     ggplot(aes(y = Curated.ID,
-               x = Year,
+               x = Ano,
                fill = RRA,
                # col = Coleta,
     )) +
     scale_x_continuous(breaks = 0:2100) +
+    
     # geom_tile() +
     geom_tile() +
     # scale_color_manual()+
@@ -334,8 +276,15 @@ scales::show_col(viridis::magma(n=9))
     labs(fill='Relative Read\nAbundance (%)',
          x = "Amostras",
          y= "Espécies") +
-    geom_hline(yintercept = c(7.5)) +
-    scale_fill_continuous(type = "viridis") +
+    geom_hline(yintercept = c(8.5)) +
+    viridis::scale_fill_viridis(
+      alpha = 1,
+      begin = 0.75,
+      end = 0,
+      direction = 1,
+      discrete = FALSE,
+      option = "D"
+    )
     theme(text=element_text(size = 10, face = "bold"))
 }
 
