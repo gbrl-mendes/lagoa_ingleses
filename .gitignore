@@ -8,6 +8,5 @@
 *.Rproj
 .csv
 *.csv
-house_keeping
 lagoa_ingleses.Rproj
 environment_lagoa_plots.RData
