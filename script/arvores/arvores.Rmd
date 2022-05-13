@@ -1,0 +1,160 @@
+---
+title: "Árvores nativas"
+author: "Heron Hilário"
+date: "5/11/2022"
+output: 
+  html_document:
+    code_download: yes
+    theme: flatly
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+{
+  library(Biostrings)
+library(DECIPHER)
+library(dplyr)
+library(stringr)
+library(ggtree)
+library(ape)
+  }
+```
+
+# fazendo árvores a partir de sequências
+
+```{r,echo=TRUE, eval=FALSE}
+#load r libs ----
+library(Biostrings)
+library(DECIPHER)
+library(dplyr)
+library(stringr)
+library(ggtree)
+library(ape)
+
+
+#read DNA from fastas ----
+dna_fasta_1 <- Biostrings::readDNAStringSet(filepath = "/home/gabriel/projetos/db-LGC/data/mai22/LGC12Sdb-mai22-dada_SPs_fullDB_order.fasta") %>%
+  DECIPHER::RemoveGaps()
+
+#as many as you want (for the same region!)
+# dna_fasta_2 <- Biostrings::readDNAStringSet(filepath = "/home/gabriel/projetos/db-LGC/data/mai22/LGC12Sdb_252seqs-mai22-order_clust.fasta") %>%
+#   DECIPHER::RemoveGaps()
+
+#combine the files and seq you want ----
+# dna_fasta <- c(dna_fasta_1,dna_fasta_2)
+dna_fasta <- c(dna_fasta_1) %>% unique()
+
+#check DNA seqs ----
+dna_fasta
+#chech their name ----
+names(dna_fasta)
+
+#Change their names (opitional) ----
+## all together
+
+# dna_fasta <- 
+  names(dna_fasta) %>% str_remove(pattern = "SF \\| |JQ \\| ")
+
+##only some (two ways of subsetting)
+
+  names(dna_fasta)[10]
+# names(dna_fasta)[10] <- "P.costatus"
+
+  names(dna_fasta[10])
+# names(dna_fasta[10]) <- "P.costatus2"
+
+# names(dna_fasta[10]) <- 
+  names(dna_fasta[10]) %>% str_replace(pattern = "Prochilodus",
+                                   replacement = "P.")
+
+  
+  
+#align your seqs ----
+  
+dna_fasta_algn <- DECIPHER::AlignSeqs(myXStringSet = dna_fasta, 
+                                      refinements = 100,
+                                      iterations = 100,
+                                      verbose = TRUE)
+
+
+#selec region of interest ----
+# based on your visualization, select only the region common to all species
+DECIPHER::BrowseSeqs(dna_fasta_algn)
+
+
+  
+#cut your alignment ----
+dna_sub_algn <- Biostrings::subseq(x = dna_fasta_algn,start = 1, end = 768)
+
+#save your alignment
+# Biostrings::writeXStringSet(x = dna_fasta_algn,                  file =  "~/prjcts/fish_eDNA/analyses/GT0635_imersao/arvore/12Sdb_MiFish_full_tax.fasta")
+Biostrings::writeXStringSet(x = dna_sub_algn,
+                            file =  "~/prjcts/.../12Sdb_MiFish_full_tax.fasta")
+
+#find primers ----
+#look for the primers aligning region on the MSA,
+#it has to be done manually :/ Ctrl+F on your browser
+  
+#HINT: you won't find the exact primer, gaps will mess it up, look for subseq
+#HINT12: the REV primer will only be found on Reverse Complement orientation
+DECIPHER::BrowseSeqs(dna_sub_algn)
+
+
+
+#identify informative region (EX: amplicon) ----
+
+#select MiFish Amplicon
+#FWD = GTCGGTAAAACTCGTGCCAGC 
+# REV = CATAGTGGGGTATCTAATCCCAGTTTG  
+  DNAStringSet("CATAGTGGGGTATCTAATCCCAGTTTG") %>% 
+  reverseComplement()
+# REV (rev comp) = CAAACTGGGATTAGATACCCCACTATG
+
+
+#clip off amplicon region----
+amplicon_algn <- Biostrings::subseq(x = dna_sub_algn,start = 10, end = 300)
+
+
+
+amplicon_algn %>% names()
+
+
+#remove some distant species or with very short seqs ----
+#NOTE: cuztomize as you want
+amplicon_algn <- amplicon_algn[!(names(amplicon_algn) %>% str_detect(pattern = "Out"))]
+
+
+#calculate distance matrix ----
+amplicon_dist <- DECIPHER::DistanceMatrix(myXStringSet = amplicon_algn,
+                                            # includeTerminalGaps = TRUE,
+                                            includeTerminalGaps = FALSE,      #test both versions on the final output
+                                            correction = "Jukes-Cantor",
+                                            processors = 20,
+                                            verbose = TRUE)
+
+#build tree ----
+
+amplicon_tree <- ape::njs(amplicon_dist)
+
+#plot tree tow view ----
+
+amplicon_tree_plot <-
+  ggtree(tr = amplicon_tree) + 
+  theme_tree2() +
+  geom_tiplab(offset = 0,align = T) + 
+  xlim(0, 2)
+
+amplicon_tree_plot %>% ggsave(filename = "/home/heron/prjcts/misc/LGC/tree_12Sdb_test.pdf",
+                              device = "pdf",width = 12,height = 40)
+
+
+# save tree ----
+
+ape::write.tree(phy = dna_fasta_tree,file = "~/prjcts/fish_eDNAarvore/12SDB_MiFish_tree.nwk")
+
+# customize (manually)-----
+
+# on MEGA software, drag and drop the .nwk file. Use tools to generate a pretty visualization
+```
