@@ -169,7 +169,7 @@ library(ggplot2)
     #retirar os NA
     filter(!is.na(Curated.ID)) %>%
     
-    #retirando as ASVs "espurias", com abundancia menor que 0.01
+    #retirando as ASVs "espurias", com abundancia menor que 0.01%
     filter(RRA >=0.01) %>%
     
     #Tile plot
