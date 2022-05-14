@@ -35,11 +35,17 @@ library(ape)
 
 
 #read DNA from fastas ----
+
+#read DB
 dna_fasta_1 <- Biostrings::readDNAStringSet(filepath = "/home/gabriel/projetos/db-LGC/data/mai22/LGC12Sdb-mai22-dada_SPs_fullDB_order.fasta") %>%
   DECIPHER::RemoveGaps()
 
+#read ASVs 
+dna_fasta_2 <- Biostrings::readDNAStringSet(filepath = "/home/gabriel/projetos/peixes-eDNA/analises/pipeline-modelo/results/pipeline-modelo-all_ASVs_all_primers.fasta") %>%
+  DECIPHER::RemoveGaps()
+
 #as many as you want (for the same region!)
-# dna_fasta_2 <- Biostrings::readDNAStringSet(filepath = "/home/gabriel/projetos/db-LGC/data/mai22/LGC12Sdb_252seqs-mai22-order_clust.fasta") %>%
+# dna_fasta_X <- Biostrings::readDNAStringSet(filepath = "/home/gabriel/projetos/db-LGC/data/mai22/LGC12Sdb_252seqs-mai22-order_clust.fasta") %>%
 #   DECIPHER::RemoveGaps()
 
 #combine the files and seq you want ----
