@@ -22,48 +22,52 @@ library(ape)
   }
 ```
 
-# fazendo árvores a partir de sequências
+# Fazendo árvores a partir de sequências
 
 ```{r,echo=TRUE, eval=FALSE}
-#load r libs ----
-library(Biostrings)
+# Load r libs ----
+{
+  library(Biostrings)
 library(DECIPHER)
 library(dplyr)
 library(stringr)
 library(ggtree)
 library(ape)
+}
 
-
-#read DNA from fastas ----
-
-#read DB
-dna_fasta_1 <- Biostrings::readDNAStringSet(filepath = "/home/gabriel/projetos/db-LGC/data/mai22/LGC12Sdb-mai22-dada_SPs_fullDB_order.fasta") %>%
-  DECIPHER::RemoveGaps()
-
-#read ASVs 
-dna_fasta_2 <- Biostrings::readDNAStringSet(filepath = "/home/gabriel/projetos/peixes-eDNA/analises/pipeline-modelo/results/pipeline-modelo-all_ASVs_all_primers.fasta") %>%
-  DECIPHER::RemoveGaps()
-
-#as many as you want (for the same region!)
-# dna_fasta_X <- Biostrings::readDNAStringSet(filepath = "/home/gabriel/projetos/db-LGC/data/mai22/LGC12Sdb_252seqs-mai22-order_clust.fasta") %>%
+# Read DNA from fastas ----
+{
+## As many as you want (for the same region!)
+# dna_fasta_x <- Biostrings::readDNAStringSet(filepath = "/home/gabriel/projetos/db-LGC/data/mai22/LGC12Sdb_252seqs-mai22-order_clust.fasta") %>%
 #   DECIPHER::RemoveGaps()
 
-#combine the files and seq you want ----
-# dna_fasta <- c(dna_fasta_1,dna_fasta_2)
-dna_fasta <- c(dna_fasta_1) %>% unique()
+## Read DB
+db_fasta <- Biostrings::readDNAStringSet(filepath = "/home/gabriel/projetos/db-LGC/data/mai22/LGC12Sdb-mai22-dada_SPs_fullDB_order.fasta") %>%
+  DECIPHER::RemoveGaps()
 
-#check DNA seqs ----
+## Read ASVs 
+asvs_fasta <- Biostrings::readDNAStringSet(filepath = "/home/gabriel/projetos/peixes-eDNA/analises/pipeline-modelo/results/pipeline-modelo-all_ASVs_all_primers.fasta") %>%
+  DECIPHER::RemoveGaps()
+}
+
+# Combine the files and seq you want ----
+{
+## dna_fasta <- c(dna_fasta_1,dna_fasta_2)
+dna_fasta <- c(db_fasta, asvs_fasta) %>% unique()
+
+## Check DNA seqs 
 dna_fasta
-#chech their name ----
+
+## Chech their name 
 names(dna_fasta)
 
-#Change their names (opitional) ----
-## all together
+## Change their names (optional)
 
-# dna_fasta <- 
-  names(dna_fasta) %>% str_remove(pattern = "SF \\| |JQ \\| ")
+  ## all together
 
-##only some (two ways of subsetting)
+dna_fasta <- names(dna_fasta) %>% str_remove(pattern = "SF \\| |JQ \\| ")
+
+## Only some (two ways of subsetting)
 
   names(dna_fasta)[10]
 # names(dna_fasta)[10] <- "P.costatus"
@@ -74,65 +78,57 @@ names(dna_fasta)
 # names(dna_fasta[10]) <- 
   names(dna_fasta[10]) %>% str_replace(pattern = "Prochilodus",
                                    replacement = "P.")
+}  
 
-  
-  
-#align your seqs ----
-  
+# Align your seqs ----
+
 dna_fasta_algn <- DECIPHER::AlignSeqs(myXStringSet = dna_fasta, 
                                       refinements = 100,
                                       iterations = 100,
                                       verbose = TRUE)
 
 
-#selec region of interest ----
-# based on your visualization, select only the region common to all species
+# Select region of interest ----
+{
+## Based on your visualization, select only the region common to all species
 DECIPHER::BrowseSeqs(dna_fasta_algn)
 
-
-  
-#cut your alignment ----
+## Cut your alignment 
 dna_sub_algn <- Biostrings::subseq(x = dna_fasta_algn,start = 1, end = 768)
 
-#save your alignment
+## Save your alignment
 # Biostrings::writeXStringSet(x = dna_fasta_algn,                  file =  "~/prjcts/fish_eDNA/analyses/GT0635_imersao/arvore/12Sdb_MiFish_full_tax.fasta")
 Biostrings::writeXStringSet(x = dna_sub_algn,
                             file =  "~/prjcts/.../12Sdb_MiFish_full_tax.fasta")
+}
 
-#find primers ----
-#look for the primers aligning region on the MSA,
-#it has to be done manually :/ Ctrl+F on your browser
+# Find primers ----
+
+## Look for the primers aligning region on the MSA,
+## it has to be done manually :/ Ctrl+F on your browser
   
-#HINT: you won't find the exact primer, gaps will mess it up, look for subseq
-#HINT12: the REV primer will only be found on Reverse Complement orientation
+## HINT: you won't find the exact primer, gaps will mess it up, look for subseq
+## HINT12: the REV primer will only be found on Reverse Complement orientation
 DECIPHER::BrowseSeqs(dna_sub_algn)
 
+## Identify informative region (EX: amplicon)
 
-
-#identify informative region (EX: amplicon) ----
-
-#select MiFish Amplicon
+## Select MiFish Amplicon
 #FWD = GTCGGTAAAACTCGTGCCAGC 
-# REV = CATAGTGGGGTATCTAATCCCAGTTTG  
+#REV = CATAGTGGGGTATCTAATCCCAGTTTG  
   DNAStringSet("CATAGTGGGGTATCTAATCCCAGTTTG") %>% 
   reverseComplement()
 # REV (rev comp) = CAAACTGGGATTAGATACCCCACTATG
 
-
-#clip off amplicon region----
+## Clip off amplicon region
 amplicon_algn <- Biostrings::subseq(x = dna_sub_algn,start = 10, end = 300)
-
-
-
 amplicon_algn %>% names()
 
-
-#remove some distant species or with very short seqs ----
-#NOTE: cuztomize as you want
+## Remove some distant species or with very short seqs
+## NOTE: cuztomize as you want
 amplicon_algn <- amplicon_algn[!(names(amplicon_algn) %>% str_detect(pattern = "Out"))]
 
-
-#calculate distance matrix ----
+# Calculate distance matrix ----
 amplicon_dist <- DECIPHER::DistanceMatrix(myXStringSet = amplicon_algn,
                                             # includeTerminalGaps = TRUE,
                                             includeTerminalGaps = FALSE,      #test both versions on the final output
@@ -140,12 +136,11 @@ amplicon_dist <- DECIPHER::DistanceMatrix(myXStringSet = amplicon_algn,
                                             processors = 20,
                                             verbose = TRUE)
 
-#build tree ----
+# Build tree ----
 
 amplicon_tree <- ape::njs(amplicon_dist)
 
-#plot tree tow view ----
-
+# Plot tree tow view ----
 amplicon_tree_plot <-
   ggtree(tr = amplicon_tree) + 
   theme_tree2() +
@@ -156,11 +151,10 @@ amplicon_tree_plot %>% ggsave(filename = "/home/heron/prjcts/misc/LGC/tree_12Sdb
                               device = "pdf",width = 12,height = 40)
 
 
-# save tree ----
-
+# Save tree ----
 ape::write.tree(phy = dna_fasta_tree,file = "~/prjcts/fish_eDNAarvore/12SDB_MiFish_tree.nwk")
 
-# customize (manually)-----
+# Customize (manually)-----
 
-# on MEGA software, drag and drop the .nwk file. Use tools to generate a pretty visualization
+## on MEGA software, drag and drop the .nwk file. Use tools to generate a pretty visualization
 ```
