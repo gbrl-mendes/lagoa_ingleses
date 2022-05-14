@@ -10,3 +10,4 @@
 *.csv
 lagoa_ingleses.Rproj
 environment_lagoa_plots.RData
+environment_lagoa_arvores.RData
