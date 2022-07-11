@@ -25,24 +25,22 @@ library(ape)
 # Fazendo árvores a partir de sequências
 
 ```{r,echo=TRUE, eval=FALSE}
-# Load r libs ----
-{
-  library(Biostrings)
-library(DECIPHER)
-library(dplyr)
-library(stringr)
-library(ggtree)
-library(ape)
-}
 
 # Read DNA from fastas ----
-{
+
+## A função readDNAStringSet() do pacote Biostrings é chamada para criar um objeto 
+## para armazenar as sequências de DNA do DB (objeto db_fasta) e das ASVs 
+## identificadas no pipeline (asvs_fasta). A flag RemoveGaps() do pacote DECIPHER
+## é utilizada para remover os gaps ("-" ou ".") que estejam nas sequências.
+
 ## As many as you want (for the same region!)
 # dna_fasta_x <- Biostrings::readDNAStringSet(filepath = "/home/gabriel/projetos/db-LGC/data/mai22/LGC12Sdb_252seqs-mai22-order_clust.fasta") %>%
 #   DECIPHER::RemoveGaps()
 
+{
 ## Read DB
-db_fasta <- Biostrings::readDNAStringSet(filepath = "/home/gabriel/projetos/db-LGC/data/mai22/LGC12Sdb-mai22-dada_SPs_fullDB_order.fasta") %>%
+
+db_fasta <- Biostrings::readDNAStringSet(filepath = "/home/heron/prjcts/fish_eDNA/DB/mai22/DB/LGC12Sdb_251seqs-mai22-pretty_names_noGaps.fasta") %>%
   DECIPHER::RemoveGaps()
 
 ## Read ASVs 
@@ -50,67 +48,30 @@ asvs_fasta <- Biostrings::readDNAStringSet(filepath = "/home/gabriel/projetos/pe
   DECIPHER::RemoveGaps()
 }
 
-# Combine the files and seq you want ----
+# Visualizar os objetos com as seqs ----
+
+## Abrir a visualização das sequências armazenadas nos objetos db_fasta e asvs_fasta
+
 {
-## dna_fasta <- c(dna_fasta_1,dna_fasta_2)
-dna_fasta <- c(db_fasta, asvs_fasta) %>% unique()
+  BrowseSeqs(db_fasta)
+  BrowseSeqs(asvs_fasta)
+  }
 
-## Check DNA seqs 
-dna_fasta
+# Selecionar a região do DB pertinente às ASVs ----
 
-## Chech their name 
-names(dna_fasta)
+## Alinhar as seqs do DB
 
-## Change their names (optional)
-
-  ## all together
-
-dna_fasta <- names(dna_fasta) %>% str_remove(pattern = "SF \\| |JQ \\| ")
-
-## Only some (two ways of subsetting)
-
-  names(dna_fasta)[10]
-# names(dna_fasta)[10] <- "P.costatus"
-
-  names(dna_fasta[10])
-# names(dna_fasta[10]) <- "P.costatus2"
-
-# names(dna_fasta[10]) <- 
-  names(dna_fasta[10]) %>% str_replace(pattern = "Prochilodus",
-                                   replacement = "P.")
-}  
-
-# Align your seqs ----
-
-dna_fasta_algn <- DECIPHER::AlignSeqs(myXStringSet = dna_fasta, 
+db_fasta_algn <- DECIPHER::AlignSeqs(myXStringSet = db_fasta, 
                                       refinements = 100,
                                       iterations = 100,
                                       verbose = TRUE)
 
+BrowseSeqs(db_fasta_algn)
 
-# Select region of interest ----
-{
-## Based on your visualization, select only the region common to all species
-DECIPHER::BrowseSeqs(dna_fasta_algn)
+## Encontrar o primer nas seqs
 
-## Cut your alignment 
-dna_sub_algn <- Biostrings::subseq(x = dna_fasta_algn,start = 1, end = 768)
-
-## Save your alignment
-# Biostrings::writeXStringSet(x = dna_fasta_algn,                  file =  "~/prjcts/fish_eDNA/analyses/GT0635_imersao/arvore/12Sdb_MiFish_full_tax.fasta")
-Biostrings::writeXStringSet(x = dna_sub_algn,
-                            file =  "~/prjcts/.../12Sdb_MiFish_full_tax.fasta")
-}
-
-# Find primers ----
-
-## Look for the primers aligning region on the MSA,
-## it has to be done manually :/ Ctrl+F on your browser
-  
-## HINT: you won't find the exact primer, gaps will mess it up, look for subseq
-## HINT12: the REV primer will only be found on Reverse Complement orientation
-DECIPHER::BrowseSeqs(dna_sub_algn)
-
+## Encontrar a região do primer reverse nas seqs,
+## deve ser feito manualmente :/ Ctrl+F no browser
 ## Identify informative region (EX: amplicon)
 
 ## Select MiFish Amplicon
@@ -118,11 +79,62 @@ DECIPHER::BrowseSeqs(dna_sub_algn)
 #REV = CATAGTGGGGTATCTAATCCCAGTTTG  
   DNAStringSet("CATAGTGGGGTATCTAATCCCAGTTTG") %>% 
   reverseComplement()
-# REV (rev comp) = CAAACTGGGATTAGATACCCCACTATG
+#REV (rev comp) = CAAACTGGGATTAGATACCCCACTATG
 
-## Clip off amplicon region
-amplicon_algn <- Biostrings::subseq(x = dna_sub_algn,start = 10, end = 300)
-amplicon_algn %>% names()
+## Based on your visualization, select only the region common to all species
+DECIPHER::BrowseSeqs(db_fasta_algn)
+
+## Procurar pela sequência acima no alinhamento dna_fasta_algn e definir
+## qual a região a ser trimada. Percebemos que é no nt 251
+
+# Cut your alignment 
+dna_fasta_algn_cut <- Biostrings::subseq(x = db_fasta_algn,start = 1, end = 251) 
+
+# Combinar os arquivos e sequências requeridas ----
+
+## dna_fasta <- c(dna_fasta_1,dna_fasta_2)
+
+{
+  dna_fasta <- c(dna_fasta_algn_cut, asvs_fasta) %>% unique() %>% RemoveGaps()
+
+## Check DNA seqs 
+dna_fasta
+
+## Check their name 
+BrowseSeqs(dna_fasta)
+  }
+
+# Alterar os nomes (optional) ----
+
+## all together
+
+  # dna_fasta <- names(dna_fasta) %>% str_remove(pattern = "SF \\| |JQ \\| ")
+
+## Only some (two ways of subsetting)
+
+  # names(dna_fasta)[10]
+# names(dna_fasta)[10] <- "P.costatus"
+
+  # names(dna_fasta[10])
+# names(dna_fasta[10]) <- "P.costatus2"
+
+# names(dna_fasta[10]) <- 
+  # names(dna_fasta[10]) %>% str_replace(pattern = "Prochilodus",
+                                   # replacement = "P.")
+
+# Align your seqs ----
+
+dna_fasta_algn <- DECIPHER::AlignSeqs(myXStringSet = dna_fasta, 
+                                      refinements = 100,
+                                      iterations = 100,
+                                      verbose = TRUE)
+DECIPHER::BrowseSeqs(dna_fasta_algn)
+
+## Save your alignment
+
+Biostrings::writeXStringSet(x = dna_fasta_algn,
+                            file =  "/home/gabriel/projetos/lagoa_ingleses/tree/asvs-LI_db.fasta")
+}
 
 ## Remove some distant species or with very short seqs
 ## NOTE: cuztomize as you want
