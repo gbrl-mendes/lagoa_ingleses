@@ -137,34 +137,40 @@ Biostrings::writeXStringSet(x = dna_fasta_algn,
 }
 
 ## Remove some distant species or with very short seqs
-## NOTE: cuztomize as you want
-amplicon_algn <- amplicon_algn[!(names(amplicon_algn) %>% str_detect(pattern = "Out"))]
+## NOTE: customize as you want
+dna_fasta_tree <- dna_fasta_algn[!(names(dna_fasta_algn) %>% str_detect(pattern = "Out"))]
+
+BrowseSeqs(dna_fasta_tree)
 
 # Calculate distance matrix ----
-amplicon_dist <- DECIPHER::DistanceMatrix(myXStringSet = amplicon_algn,
+dna_dist <- DECIPHER::DistanceMatrix(myXStringSet = dna_fasta_tree,
                                             # includeTerminalGaps = TRUE,
                                             includeTerminalGaps = FALSE,      #test both versions on the final output
                                             correction = "Jukes-Cantor",
                                             processors = 20,
                                             verbose = TRUE)
 
+is.na(dna_dist)
+
 # Build tree ----
 
-amplicon_tree <- ape::njs(amplicon_dist)
+dna_tree <- ape::njs(dna_dist)
 
 # Plot tree tow view ----
-amplicon_tree_plot <-
-  ggtree(tr = amplicon_tree) + 
+dna_tree_plot <-
+  ggtree(tr = dna_tree) + 
   theme_tree2() +
   geom_tiplab(offset = 0,align = T) + 
   xlim(0, 2)
 
-amplicon_tree_plot %>% ggsave(filename = "/home/heron/prjcts/misc/LGC/tree_12Sdb_test.pdf",
+print(dna_tree_plot)
+
+dna_tree_plot %>% ggsave(filename = "gabriel/projetos/lagoa_ingleses/tree/asv-LI_db_tree.pdf",
                               device = "pdf",width = 12,height = 40)
 
 
 # Save tree ----
-ape::write.tree(phy = dna_fasta_tree,file = "~/prjcts/fish_eDNAarvore/12SDB_MiFish_tree.nwk")
+ape::write.tree(phy = dna_tree,file = "~/projetos/lagoa_ingleses/tree/asv-LI_db_tree.nwk")
 
 # Customize (manually)-----
 
