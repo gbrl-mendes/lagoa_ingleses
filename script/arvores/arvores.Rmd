@@ -12,14 +12,14 @@ editor_options:
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
-{
-  library(Biostrings)
+{library(Biostrings)
 library(DECIPHER)
 library(dplyr)
 library(stringr)
 library(ggtree)
 library(ape)
-  }
+library(RColorBrewer)
+}
 ```
 
 # Fazendo árvores a partir de sequências
@@ -38,28 +38,25 @@ library(ape)
 #   DECIPHER::RemoveGaps()
 
 {
-## Read DB
-
+# Read DB
 db_fasta <- Biostrings::readDNAStringSet(filepath = "/home/heron/prjcts/fish_eDNA/DB/mai22/DB/LGC12Sdb_251seqs-mai22-pretty_names_noGaps.fasta") %>%
   DECIPHER::RemoveGaps()
 
-## Read ASVs 
+# Visualizar as seqs do db
+BrowseSeqs(db_fasta)
+
+# Read ASVs 
 asvs_fasta <- Biostrings::readDNAStringSet(filepath = "/home/gabriel/projetos/peixes-eDNA/analises/pipeline-modelo/results/pipeline-modelo-all_ASVs_all_primers.fasta") %>%
   DECIPHER::RemoveGaps()
+
+# Visualizar as seqs das ASVs
+BrowseSeqs(asvs_fasta)
 }
-
-# Visualizar os objetos com as seqs ----
-
-## Abrir a visualização das sequências armazenadas nos objetos db_fasta e asvs_fasta
-
-{
-  BrowseSeqs(db_fasta)
-  BrowseSeqs(asvs_fasta)
-  }
 
 # Selecionar a região do DB pertinente às ASVs ----
 
-## Alinhar as seqs do DB
+{
+  # Alinhar as seqs do DB
 
 db_fasta_algn <- DECIPHER::AlignSeqs(myXStringSet = db_fasta, 
                                       refinements = 100,
@@ -67,8 +64,10 @@ db_fasta_algn <- DECIPHER::AlignSeqs(myXStringSet = db_fasta,
                                       verbose = TRUE)
 
 BrowseSeqs(db_fasta_algn)
+}
 
-## Encontrar o primer nas seqs
+
+# Encontrar o primer nas seqs
 
 ## Encontrar a região do primer reverse nas seqs,
 ## deve ser feito manualmente :/ Ctrl+F no browser
@@ -90,17 +89,20 @@ DECIPHER::BrowseSeqs(db_fasta_algn)
 # Cut your alignment 
 dna_fasta_algn_cut <- Biostrings::subseq(x = db_fasta_algn,start = 1, end = 251) 
 
+# Visualizar o alinhamento do DB após o corte
+BrowseSeqs(dna_fasta_algn_cut)
+
 # Combinar os arquivos e sequências requeridas ----
 
-## dna_fasta <- c(dna_fasta_1,dna_fasta_2)
+# dna_fasta <- c(dna_fasta_1,dna_fasta_2)
 
 {
   dna_fasta <- c(dna_fasta_algn_cut, asvs_fasta) %>% unique() %>% RemoveGaps()
 
-## Check DNA seqs 
+# Check DNA seqs 
 dna_fasta
 
-## Check their name 
+# Check their name 
 BrowseSeqs(dna_fasta)
   }
 
@@ -122,15 +124,41 @@ BrowseSeqs(dna_fasta)
   # names(dna_fasta[10]) %>% str_replace(pattern = "Prochilodus",
                                    # replacement = "P.")
 
+# Orient nucleotides ----
+
+## Orients nucleotide sequences to match the directionality and complementarity of specified reference sequences
+dna_fasta_or <- DECIPHER::OrientNucleotides(dna_fasta,
+                                            reference = which.max(width(db_fasta)),
+                                            type = "sequences", 
+                                            orientation = "all",
+                                            threshold = 0.05,
+                                            verbose = TRUE,
+                                            processors = 1)
+
+# Visualizar as seqs após a orientação
+BrowseSeqs(dna_fasta_or)
+
+dna_fasta_or <- DECIPHER::OrientNucleotides(dna_fasta,
+                                            reference = which.max(width(db_fasta),
+                                            type = "sequences", 
+                                            orientation = "all",
+                                            threshold = 0.05,
+                                            verbose = TRUE,
+                                            processors = 1)
+# Visualizar as seqs após a orientação
+
+BrowseSeqs(dna_fasta_or)
+BrowseSeqs(db_fasta)
+
 # Align your seqs ----
 
-dna_fasta_algn <- DECIPHER::AlignSeqs(myXStringSet = dna_fasta, 
+dna_fasta_algn <- DECIPHER::AlignSeqs(myXStringSet = dna_fasta_or, 
                                       refinements = 100,
                                       iterations = 100,
                                       verbose = TRUE)
-DECIPHER::BrowseSeqs(dna_fasta_algn)
+BrowseSeqs(dna_fasta_algn)
 
-## Save your alignment
+# Save your alignment
 
 Biostrings::writeXStringSet(x = dna_fasta_algn,
                             file =  "/home/gabriel/projetos/lagoa_ingleses/tree/asvs-LI_db.fasta")
@@ -150,7 +178,30 @@ dna_dist <- DECIPHER::DistanceMatrix(myXStringSet = dna_fasta_tree,
                                             processors = 20,
                                             verbose = TRUE)
 
-is.na(dna_dist)
+# Construção do Heatmap
+
+## Visualizar as seqs de ASVs que mais destoam do conjunto principal
+## Nao estava sendo possivel construir a arvore por causa de valores infinitos na matriz.
+## Por esse motivo, plotamos esse heatmap que favorece a visualizacao das sequencias que 
+## estao tendo distancia infinita em relacao as outras
+
+# Transformar os valores de INF em 1 para poder ler a matriz com o heatmap
+dna_dist[is.infinite(dna_dist)] <- 1
+
+# Heatmap
+pheatmap::pheatmap(dna_dist,
+                   fontsize = 1,
+                   col = brewer.pal(n = 9,name = "YlOrRd"),
+                   treeheight_col = 0,
+                   filename = "/home/gabriel/projetos/lagoa_ingleses/tree/heatmap_dist.pdf", ## avaliar quais ASVs estao sendo outliers abrindo o pdf e olhando seus nomes
+                   width = 8,
+                   height = 6
+                   )
+
+# Retirar do conjunto de ASVs as sequencias distoantes
+
+dna_fasta_tree[!dna_fasta_tree == ""]
+
 
 # Build tree ----
 
