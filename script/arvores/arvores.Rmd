@@ -18,7 +18,6 @@ library(dplyr)
 library(stringr)
 library(ggtree)
 library(RColorBrewer)
-library(waldo)
 }
 ```
 
@@ -104,7 +103,16 @@ dna_fasta
 
 # Check their name 
 BrowseSeqs(dna_fasta)
-  }
+}
+
+# Alinhar as seqs do banco e das ASVs
+dna_fasta_algn_pr <- DECIPHER::AlignSeqs(myXStringSet = dna_fasta, 
+                                      refinements = 100,
+                                      iterations = 100,
+                                      verbose = TRUE)
+
+# Checar o alinhamento
+BrowseSeqs(dna_fasta_algn_pr)
 
 # Alterar os nomes (optional) ----
 
@@ -137,16 +145,6 @@ dna_fasta_or <- DECIPHER::OrientNucleotides(dna_fasta,
 
 # Visualizar as seqs após a orientação
 BrowseSeqs(dna_fasta_or)
-
-dna_fasta_or <- DECIPHER::OrientNucleotides(dna_fasta,
-                                            reference = which.max(width(db_fasta),
-                                            type = "sequences", 
-                                            orientation = "all",
-                                            threshold = 0.05,
-                                            verbose = TRUE,
-                                            processors = 1)
-# Visualizar as seqs após a orientação
-BrowseSeqs(dna_fasta_or)
 BrowseSeqs(db_fasta)
 
 # Filtrar as Seqs ----
@@ -160,7 +158,8 @@ BrowseSeqs(db_fasta)
 ## NOTE: customize as you want
 
 # Lista contendo os headers das ASVs que possuem sequencias discrepantes em relacao ao resto
-asvs_to_remove <- c("ASV_204_85bp_merged|NA|NA|NA|NA",
+asvs_to_remove <- c("ASV_11_195bp_merged|Cichlidae|NA|NA|Cichlidae",
+                    "ASV_204_85bp_merged|NA|NA|NA|NA",
                     "ASV_201_93bp_merged|NA|NA|NA|NA",
                     "ASV_209_81bp_merged|NA|NA|NA|NA",
                     "ASV_208_81bp_merged|NA|NA|NA|NA",
@@ -203,9 +202,9 @@ asvs_to_remove <- c("ASV_204_85bp_merged|NA|NA|NA|NA",
                     "ASV_71_171bp_merged|NA|NA|NA|Oryctolagus cuniculus mitochon",
                     "ASV_80_170bp_merged|Bovidae|Bos|Bos taurus|Bos taurus",
                     "ASV_78_170bp_merged|NA|NA|NA|Sus scrofa isolate Europe hapl",
-                    "ASV_106_169bp_merged|NA|NA|NA|Sus scrofa breed Andaman Desi",#
+                    "ASV_106_169bp_merged|NA|NA|NA|Sus scrofa breed Andaman Desi ",
                     "ASV_76_170bp_merged|NA|NA|NA|Didelphis albiventris mitochon",
-                    "ASV_182_167bp_merged|NA|NA|NA|Cavia magna 12S ribosomal RNA",#
+                    "ASV_182_167bp_merged|NA|NA|NA|Cavia magna 12S ribosomal RNA ",
                     "ASV_61_172bp_merged|Hominidae|Homo|Homo sapiens|Homo sapiens",
                     "ASV_73_171bp_merged|Hominidae|Homo|Homo sapiens|Homo sapiens",
                     "ASV_72_171bp_merged|Hominidae|Homo|Homo sapiens|Homo sapiens",
@@ -227,43 +226,47 @@ asvs_to_remove <- c("ASV_204_85bp_merged|NA|NA|NA|NA",
                     "ASV_119_168bp_merged|Bovidae|Bos|Bos taurus|Bos taurus",
                     "ASV_116_168bp_merged|Bovidae|Bos|Bos taurus|Bos taurus",
                     "ASV_118_168bp_merged|Bovidae|Bos|Bos taurus|Bos taurus",
-                    "ASV_192_158bp_merged|NA|NA|NA|Human DNA sequence from clone",#
+                    "ASV_192_158bp_merged|NA|NA|NA|Human DNA sequence from clone ",
                     "ASV_28_181bp_merged|NA|NA|NA|Progne chalybea mitochondrion,",
                     "ASV_29_180bp_merged|NA|NA|NA|Nannopterum brasilianus mitoch") 
 
 dna_fasta_fil <- dna_fasta_or[!(names(dna_fasta_or) %>% str_detect(pattern = "Out")) & ## removendo as ASVs com "Out" no header
-                                   !(names(dna_fasta_or) %in% asvs_to_remove) & #removendo as ASVs que estão na lista asvs_to_remove
-                                   !(names(dna_fasta_or) %>% str_detect(pattern = "ASV_192_158bp_merged|NA|NA|NA|Human DNA sequence from clone")) & 
-                                   !(names(dna_fasta_or) %>% str_detect(pattern = "ASV_182_167bp_merged|NA|NA|NA|Cavia magna 12S ribosomal RNA")) & 
-                                   !(names(dna_fasta_or) %>% str_detect(pattern = "ASV_106_169bp_merged|NA|NA|NA|Sus scrofa breed Andaman Desi"))]
-  
+                                   !(names(dna_fasta_or) %in% asvs_to_remove)] #removendo as ASVs que estão na lista asvs_to_remove
+                                   
+# Verificar quais sequências foram filtradas
+filtrado <- names(dna_fasta_or[!(names(dna_fasta_or) %in% names(dna_fasta_fil))]) # os nomes foram armazenados no objeto filtrado
+
+# Verificar as as ASVs que sobraram mas não estão na lista de seqs para filtrar
+filtrado[!filtrado %in% asvs_to_remove] #este resultado possui apenas as sequências externas, ja que elas foram retiradas com o str_detect
+
+# Verificar quais nomes estão na lista de seqs para filtrar mas não foram filtradas
+asvs_to_remove[!asvs_to_remove %in% filtrado]
 
 BrowseSeqs(dna_fasta_or)
 BrowseSeqs(dna_fasta_fil)
 
-# Align your seqs ----
+# Alinhar as seqs ----
 
-dna_fasta_algn <- DECIPHER::AlignSeqs(myXStringSet = dna_fasta_fil, 
+dna_fasta_falgn <- DECIPHER::AlignSeqs(myXStringSet = dna_fasta_fil, 
                                       refinements = 100,
                                       iterations = 100,
                                       verbose = TRUE)
-BrowseSeqs(dna_fasta_algn)
+BrowseSeqs(dna_fasta_falgn)
 
-# Save your alignment
+# Salvar o alinhamento
 
-Biostrings::writeXStringSet(x = dna_fasta_algn,
+Biostrings::writeXStringSet(x = dna_fasta_falgn,
                             file =  "/home/gabriel/projetos/lagoa_ingleses/tree/asvs-LI_db.fasta")
-}
 
-# Calculate distance matrix ----
-dna_dist <- DECIPHER::DistanceMatrix(myXStringSet = dna_fasta_tree,
+# Calcular a matriz de distancia ----
+dna_dist <- DECIPHER::DistanceMatrix(myXStringSet = dna_fasta_falgn,
                                             # includeTerminalGaps = TRUE,
                                             includeTerminalGaps = FALSE,      #test both versions on the final output
                                             correction = "Jukes-Cantor",
                                             processors = 20,
                                             verbose = TRUE)
 
-# Construção do Heatmap
+# Construcao do Heatmap ----
 
 ## Visualizar as seqs de ASVs que mais destoam do conjunto principal
 ## Nao estava sendo possivel construir a arvore por causa de valores infinitos na matriz.
@@ -288,24 +291,23 @@ pheatmap::pheatmap(dna_dist,
 dna_fasta_tree[!dna_fasta_tree == ""]
 
 
-# Build tree ----
+
+# Construir arvore ----
 
 dna_tree <- ape::njs(dna_dist)
 
 # Plot tree tow view ----
-dna_tree_plot <-
-  ggtree(tr = dna_tree) + 
+dna_tree_plot <- ggtree(tr = dna_tree) + 
   theme_tree2() +
   geom_tiplab(offset = 0,align = T) + 
   xlim(0, 2)
 
 print(dna_tree_plot)
 
-dna_tree_plot %>% ggsave(filename = "gabriel/projetos/lagoa_ingleses/tree/asv-LI_db_tree.pdf",
-                              device = "pdf",width = 12,height = 40)
+dna_tree_plot %>% ggsave(filename = "/home/gabriel/projetos/lagoa_ingleses/tree/asv-LI_db_tree.pdf", 
+                         device = "pdf",width = 12,height = 40)
 
-
-# Save tree ----
+# Salvar arvore ----
 ape::write.tree(phy = dna_tree,file = "~/projetos/lagoa_ingleses/tree/asv-LI_db_tree.nwk")
 
 # Customize (manually)-----
