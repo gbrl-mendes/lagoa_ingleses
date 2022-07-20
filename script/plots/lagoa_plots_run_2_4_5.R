@@ -1,18 +1,64 @@
-library(dplyr)
-library(ggplot2)
-
-#Obtencao dos dados
+---
+  title: "Análises de composição de espécies por amostras coletadas em época chuvosa e época seca na Lagoa dos Ingleses"
+author: 
+  - "Mendes, GA; Hilário, OH; Carvalho, DC"
+date: "07/12/2021"
+output:
+  html_document:
+  code_download: yes
+theme: flatly
+toc: true
+toc_depth: 4
+toc_float: true
+pdf_document: default
+editor_options:
+  chunk_output_type: console
+---
+  
+# Carregando bibliotecas ----
 {
-  raw_results_tbl <- read.csv("~/projetos/lagoa_ingleses/tabelas/raw/run_2_4_5_lagoa_ingleses_v2.csv",sep = ",")
+  library(dplyr)
+  library(tidyr)
+  library(tibble)
+  library(stringr)
+  library(dplyr)
+  library(ggplot2)
+  library(phyloseq)
+  library(Biostrings)
+  library(Matrix)
+  library(ShortRead)
+  library(DECIPHER)
+  library(future)
+  library(vegan)
 }
 
-#Criacao da lista com os possiveis nomes atribuidos as ASVs
+# Caminhos 
+{
+  prjct_path <- "~/projetos/lagoa_ingleses/"
+  
+  results_path <- paste0(prjct_path,"/results")
+  
+  figs_path <- paste0(results_path,"/figuras")
+  
+  tbl_path <- paste0(prjct_path,"/tabelas/raw/run_2_4_5")
+  
+  prjct_radical <- "eDNA_Lagoa-dos-Ingleses"
+}
+
+# Obtencao dos dados
+{
+  raw_results_tbl <- read.csv(paste0(tbl_path,"/","run_2_4_5_lagoa_ingleses_v2.csv"), sep = ",")
+}
+
+# Tile Plots ----
+
+# Criacao da lista com os possiveis nomes atribuidos as ASVs
 {
 raw_results_tbl %>% colnames()
 raw_results_tbl %>% colnames() %>% paste0(collapse = '",\n"') %>% cat()
 }
 
-#Agrupamento da ASVs que possuem os mesmos atributos abaixo
+# Agrupamento da ASVs que possuem os mesmos atributos abaixo
 {
 grouped_by_ID_tbl <- raw_results_tbl %>%
   select(c(
@@ -33,26 +79,37 @@ grouped_by_ID_tbl <- raw_results_tbl %>%
     "Relative.abundance.on.sample",
     # "Sample.total.abundance",
     # "Type",
-    "Point", # "Sub.point", # "Depth", # "Num.replicates", # "Obs", # "Primer", # "Quantidade.de.ovos.ou.larvas", # "Kingdom", # "Phylum", # "Class", # "Order", # "Family", # "Genus", # "Species", # "Specimen", # "Basin", # "exact.Genus", # "exact.Species", # "exact.GenSp", # "X1_subject.header", # "X1_subject", # "X1_indentity", # "X1_length", # "X1_mismatches", # "X1_gaps", # "X1_query.start", # "X1_query.end", # "X1_subject.start", # "X1_subject.end", # "X1_e.value", # "X1_bitscore", # "X1_qcovhsp", # "X2_subject.header", # "X2_subject", # "X2_indentity", # "X2_length", # "X2_mismatches", # "X2_gaps", # "X2_query.start", # "X2_query.end", # "X2_subject.start", # "X2_subject.end", # "X2_e.value", # "X2_bitscore", # "X2_qcovhsp", # "X3_subject.header", # "X3_subject", # "X3_indentity", # "X3_length", # "X3_mismatches", # "X3_gaps", # "X3_query.start", # "X3_query.end", # "X3_subject.start", # "X3_subject.end", # "X3_e.value", # "X3_bitscore", # "X3_qcovhsp", # "Tag.pairs", # "Tag.FWD", # "Tag.REV", # "Control", # "Size..pb.", # "ASV.header", # "ASV..Sequence.", # "Remove", # "Probable.bacteria", # "Abd..higher.than.in.control"
-  )) %>% group_by(Sample,Curated.ID,Expedition, Point ,Sample.Name, File_name) %>%
-  summarize(`Sample` = unique(Sample),
-            `Curated.ID` = unique(Curated.ID),
-            `Expedition` = unique(Expedition),
-            `Year` = unique(Year),
-            `Point` = unique(Point),
-            `Sample.Name` = unique(Sample.Name),
-            `File_name` = unique(File_name),
-            `RRA` = sum(Relative.abundance.on.sample)) %>%
-  ungroup()
+    "Point", # "Sub.point", # "Depth", # "Num.replicates", # "Obs", # "Primer", # "Quantidade.de.ovos.ou.larvas", 
+    # "Kingdom", # "Phylum", # "Class", # "Order", # "Family", # "Genus", # "Species", # "Specimen", # "Basin", 
+    # "exact.Genus", # "exact.Species", # "exact.GenSp", # "X1_subject.header", # "X1_subject", # "X1_indentity", 
+    # "X1_length", # "X1_mismatches", # "X1_gaps", # "X1_query.start", # "X1_query.end", # "X1_subject.start", 
+    # "X1_subject.end", # "X1_e.value", # "X1_bitscore", # "X1_qcovhsp", # "X2_subject.header", # "X2_subject", 
+    # "X2_indentity", # "X2_length", # "X2_mismatches", # "X2_gaps", # "X2_query.start", # "X2_query.end", 
+    # "X2_subject.start", # "X2_subject.end", # "X2_e.value", # "X2_bitscore", # "X2_qcovhsp", # "X3_subject.header", 
+    # "X3_subject", # "X3_indentity", # "X3_length", # "X3_mismatches", # "X3_gaps", # "X3_query.start", 
+    # "X3_query.end", # "X3_subject.start", # "X3_subject.end", # "X3_e.value", # "X3_bitscore", # "X3_qcovhsp", 
+    # "Tag.pairs", # "Tag.FWD", # "Tag.REV", # "Control", # "Size..pb.", # "ASV.header", # "ASV..Sequence.", 
+    # "Remove", # "Probable.bacteria", # "Abd..higher.than.in.control"
+    )) %>% 
+    group_by(Sample, Curated.ID, Expedition, Point, Sample.Name, File_name) %>% 
+    summarize(`Sample` = unique(Sample),
+              `Curated.ID` = unique(Curated.ID),
+              `Expedition` = unique(Expedition),
+              `Year` = unique(Year),
+              `Point` = unique(Point),
+              `Sample.Name` = unique(Sample.Name),
+              `File_name` = unique(File_name),
+              `RRA` = sum(Relative.abundance.on.sample)) %>%
+    ungroup()
 }
 
-#organizar as especies
+# Organizar as especies
 {
 grouped_by_ID_tbl$Curated.ID %>% unique()%>% sort() %>%  paste0(collapse = '",\n"') %>% cat()
 grouped_by_ID_tbl$Sample %>% unique()%>% sort() %>%  paste0(collapse = '",\n"') %>% cat()
 }
 
-#organizar as ordem das especies usando fatores
+# Organizar as ordem das especies usando fatores
 
   #com todas as identificacoes
 {
@@ -101,12 +158,12 @@ grouped_by_ID_tbl <- grouped_by_ID_tbl %>%
                                         "Pseudoplatystoma corruscans",
                                         "Pygocentrus piraya",
                                         "Rhamdia quelen",
-                                        "Salmo salar",
                                         "Serrasalmus brandtii",
                                         "Tilapia rendalli",
                                         "Wertheimeria maculata",
                                         #não-peixes
                                         "Cavia magna",
+                                        "Salmo salar",
                                         "Cutibacterium acnes",
                                         "Bos taurus",
                                         "Canis familiaris",
@@ -121,7 +178,7 @@ grouped_by_ID_tbl <- grouped_by_ID_tbl %>%
                                         ))))
 }
 
-#sem os grupos
+# Sem os grupos
 {
   grouped_by_ID_tbl <- grouped_by_ID_tbl %>%
     mutate(Curated.ID = factor(Curated.ID,
@@ -188,11 +245,11 @@ grouped_by_ID_tbl <- grouped_by_ID_tbl %>%
                                ))))
 }
 
-#Criacao do Tile Plot das amostras da Lagoa dos Ingleses sequenciadas nas corridas 2, 4 e 5
-#exibindo  por ponto, por mês
+# Criacao do Tile Plot das amostras da Lagoa dos Ingleses sequenciadas nas corridas 2, 4 e 5
+# exibindo  por ponto, por mês
 {
 grouped_by_ID_tbl %>%
-  #transformando variaveis categoricas em fatores com niveis
+  # transformando variaveis categoricas em fatores com niveis
   mutate(Expedition = factor(Expedition)) %>%
   mutate(Sample = factor(Sample,
                          levels = c("L1_nov21",
@@ -218,17 +275,17 @@ grouped_by_ID_tbl %>%
   mutate(File_name = factor(File_name)) %>%
   mutate(Expedition = factor(Expedition)) %>%
  
-  #filtrando apenas o que vc quer mostras
+  # filtrando apenas o que vc quer mostras
   filter(!Curated.ID %in% c("Astyanax",
                             "Characidae",
                             "Cichlidae",
                             "Hoplias",
                             "Pimelodus")) %>%
   
-  #retirando as ASVs "espurias", com abundancia menor que 0.01
+  # retirando as ASVs "espurias", com abundancia menor que 0.01
   filter(RRA >=0.01) %>%
   
-  #retirar os NA
+  # retirar os NA
   filter(!is.na(Curated.ID)) %>%
     
     #Tile plot
@@ -259,8 +316,8 @@ grouped_by_ID_tbl %>%
     
 }
 
-#Criacao do Tile Plot das amostras da Lagoa dos Ingleses sequenciadas nas corridas 2, 4 e 5
-#exibindo  por ano apenas
+# Criacao do Tile Plot das amostras da Lagoa dos Ingleses sequenciadas nas corridas 2, 4 e 5
+# Exibindo  por ano apenas
 {
   grouped_by_ID_tbl %>%
     #transformando variaveis categoricas em fatores com niveis
@@ -329,4 +386,327 @@ grouped_by_ID_tbl %>%
     scale_fill_continuous(type = "viridis") +
     theme(text=element_text(size = 10, face = "bold"))
 }
+
+# Criacao do NMDS ----
+
+# Obtencao dos dados
+{
+  raw_results_NMDS <- read.csv(file = paste0(tbl_path,"/", "run_2_4_5_lagoa_ingleses_v2.csv"), sep = ",",
+                      header = TRUE,
+                      check.names = FALSE,
+                      na.strings=c("NA","NaN", "")) %>% 
+    as_tibble()
+  }
+
+# Criacao da lista com os possiveis nomes atribuidos as ASVs
+{
+  raw_results_NMDS %>% colnames()
+  raw_results_NMDS %>% colnames() %>% paste0(collapse = '",\n"') %>% cat()
+}
+
+# Agrupamento da ASVs que possuem os mesmos atributos abaixo
+{
+  grouped_by_ID_NMDS <- raw_results_NMDS %>%
+    select(c(
+      "Sample",
+      # "Run",
+      # "Group",
+      "Expedition",
+      # "Coleta",
+      "Year",
+      "Sample.Name",
+      "File_name",
+      # "OTU",
+      # "Read_origin",
+      "Curated ID",
+      # "final.ID",
+      # "Abundance",
+      # "Relative.abundance.to.all.samples",
+      "Relative abundance on sample",
+      # "Sample.total.abundance",
+      # "Type",
+      "Point", # "Sub.point", # "Depth", # "Num.replicates", # "Obs", # "Primer", # "Quantidade.de.ovos.ou.larvas", 
+      # "Kingdom", # "Phylum", # "Class", # "Order", # "Family", # "Genus", # "Species", # "Specimen", # "Basin", 
+      # "exact.Genus", # "exact.Species", # "exact.GenSp", # "X1_subject.header", # "X1_subject", # "X1_indentity", 
+      # "X1_length", # "X1_mismatches", # "X1_gaps", # "X1_query.start", # "X1_query.end", # "X1_subject.start", 
+      # "X1_subject.end", # "X1_e.value", # "X1_bitscore", # "X1_qcovhsp", # "X2_subject.header", # "X2_subject", 
+      # "X2_indentity", # "X2_length", # "X2_mismatches", # "X2_gaps", # "X2_query.start", # "X2_query.end", 
+      # "X2_subject.start", # "X2_subject.end", # "X2_e.value", # "X2_bitscore", # "X2_qcovhsp", # "X3_subject.header", 
+      # "X3_subject", # "X3_indentity", # "X3_length", # "X3_mismatches", # "X3_gaps", # "X3_query.start", 
+      # "X3_query.end", # "X3_subject.start", # "X3_subject.end", # "X3_e.value", # "X3_bitscore", # "X3_qcovhsp", 
+      # "Tag.pairs", # "Tag.FWD", # "Tag.REV", # "Control", # "Size..pb.", # "ASV.header", # "ASV..Sequence.", 
+      # "Remove", # "Probable.bacteria", # "Abd..higher.than.in.control"
+    )) %>% 
+    group_by(Sample, `Curated ID`,  Expedition, Point, Sample.Name, File_name) %>% 
+    summarize(`Sample` = unique(Sample),
+              `Curated ID` = unique(`Curated ID`),
+              `Expedition` = unique(Expedition),
+              `Year` = unique(Year),
+              `Point` = unique(Point),
+              `Sample.Name` = unique(Sample.Name),
+              `File_name` = unique(File_name),
+              `RRA` = sum(`Relative abundance on sample`)) %>%
+    ungroup()
+  }
+
+# Organizar as especies
+{
+    grouped_by_ID_NMDS$Sample %>% unique() %>% sort() %>%  paste0(collapse = '",\n"') %>% cat()
+  grouped_by_ID_NMDS$Expedition %>% unique() %>% sort() %>%  paste0(collapse = '",\n"') %>% cat()
+  grouped_by_ID_NMDS$Year %>% unique() %>% sort() %>%  paste0(collapse = '",\n"') %>% cat()
+  grouped_by_ID_NMDS$Point %>% unique() %>% sort() %>%  paste0(collapse = '",\n"') %>% cat()
+  }
+
+# Fatorizar as variaveis para melhor plotagem
+
+fact_NMDS <- grouped_by_ID_NMDS %>%
+  mutate(Sample = factor(Sample, levels = c("L1_nov21",
+                                            "L1_out21",
+                                            "L2_dez20",
+                                            "L2_nov21",
+                                            "L2_out21",
+                                            "L3_nov21",
+                                            "L3_out21",
+                                            "L4_nov21",
+                                            "L4_out21",
+                                            "LI1-neo-mi")), 
+         Expedition = factor(Expedition, levels = c("Dec/20",
+                                                    "Nov_Dec/20",
+                                                    "Nov/20",
+                                                    "Nov/21",
+                                                    "out/21")), 
+         Year = factor(Year, levels = c("2020",
+                                        "2021")),
+         Point = factor(Point, levels = c("L1",
+                                          "L2",
+                                          "L3",
+                                          "L4")))
+
+# Criacao do plot NMDS
+
+fact_NMDS$Sample %>% unique()
+fact_NMDS %>% colnames()
+
+# class(dune)
+# 1- Preparar os dados para entrar no vegan ----
+
+fact_NMDS_tbl <- fact_NMDS %>% 
+  select(c(Sample, Point, `Curated ID`, Expedition, Year, RRA )) %>%
+  group_by(Sample,`Curated ID`, Expedition, Year, Point) %>%
+  summarise(RRA = sum(RRA)) %>%
+  pivot_wider(c(Sample, Expedition, Year, Point), names_from = `Curated ID` ,values_from = RRA) %>%
+  mutate_if(is.numeric, ~replace(., is.na(.), 0))
+
+################################ fiz até aqui ######################################################
+
+
+
+
+#2- associate sample numbers to sample names ----
+for (sample in 1:nrow(all_IDs_NMDS_tbl)) {
+  
+  all_IDs_NMDS_tbl$`Sample number`[sample] <- sample
+  # all_IDs_NMDS_tbl$`Sample number`[sample] <- all_IDs_NMDS_tbl$Sample[sample] %>% stringr::str_remove(pattern = "PP0|PP")
+  
+}
+
+#tirando as amostras da ecomol pra facilitar
+
+# all_IDs_NMDS_tbl <- all_IDs_NMDS_tbl[all_ps_blst_vegan$Run %in% c("LGC_MiniSeq_1", "LGC_MiniSeq_2"),] 
+
+
+
+
+colnames(all_IDs_NMDS_tbl)
+hist(colSums(all_IDs_NMDS_tbl[,-c(1:5)]))
+hist(rowSums(all_IDs_NMDS_tbl[,-c(1:5)]))
+all_IDs_NMDS_tbl[,-c(1:5)]
+
+all_IDs_NMDS_tbl %>% select(Sample_name, `Sample number`) %>% unique()
+# all_ps_blst_vegan %>% select(`Sample number`, 1:(ncol(.)-1))
+
+#3- create data.frame of species counts: rownames are Sample numbers ----
+
+all_IDs_NMDS_df <- all_IDs_NMDS_tbl %>% 
+  select(-c("Sample_name", "Sample", "Primer","Run")) %>% 
+  select(base::sort(colnames(.))) %>% 
+  as.data.frame() 
+
+#4- name rows as Sample numbers and remove column ----
+row.names(all_IDs_NMDS_df) <- all_IDs_NMDS_df$`Sample number`
+
+all_IDs_NMDS_df <- all_IDs_NMDS_df %>% 
+  select(-c(`Sample number`))
+
+
+#5- 
+
+all_ps_ord <- decorana(veg = all_IDs_NMDS_df)
+
+all_ps_ord %>% summary()
+
+all_ps_ord %>% str()
+
+all_ps_ord$cproj
+
+
+plot(all_ps_ord)
+plot(all_ps_ord,type = "p")
+plot(all_ps_ord,type = "c") 
+
+points(all_ps_ord, display = "sites", cex = 0.8, pch=21, col="red", bg="yellow")
+text(all_ps_ord, display = "sites", cex=0.7, col="blue")
+text(all_ps_ord, display = "spec", cex=0.7, col="blue")
+
+
+
+#6- NMDS analisys ----
+
+
+
+# library(vegan)
+# data(varespec)
+#6a- Calculate distances ----
+all_IDs_vg_dist <- vegdist(all_IDs_NMDS_df, method="bray")
+
+vegan::scores(all_IDs_vg_dist)
+
+# all_ps_vg_dist_metaMDS <- metaMDS(comm = all_ps_vg_dist, autotransform = FALSE) 
+# actually autotransform = FALSE doesn't seem to change the results
+
+# plot(all_ps_vg_dist_metaMDS)
+
+# all_ps_vg_dist_metaMDS_2 <- metaMDS(comm = all_ps_vg_dist, distance = "bray", k =2)
+
+# plot(all_ps_vg_dist_metaMDS_2)
+
+#selecionar apenas espécies esperadas?
+
+all_IDs_NMDS_df %>% ncol()
+all_IDs_NMDS_df <- all_IDs_NMDS_df[,(colnames(all_IDs_NMDS_df) %in% expected_sps)]
+
+
+all_IDs_NMDS_df %>% ncol()
+all_IDs_vg_dist <- vegdist(all_IDs_NMDS_df, method="bray")
+
+all_ps_ord <- decorana(veg = all_IDs_NMDS_df)
+
+all_ps_ord %>% summary()
+
+all_ps_ord %>% str()
+
+all_ps_ord$cproj
+
+
+plot(all_ps_ord)
+plot(all_ps_ord,type = "p")
+plot(all_ps_ord,type = "c") 
+vegan::scores(all_IDs_vg_dist)
+
+
+
+
+# all_IDs_NMDS_df[,(colnames(all_IDs_NMDS_df) %in% expected_sps)] %>% colnames()
+# all_IDs_NMDS_df%>% colnames()
+
+
+
+all_ps_vegan_ord_meta <- metaMDS(veg = all_IDs_NMDS_df, comm = all_IDs_vg_dist)
+# actually autotransform = FALSE doesn't seem to change the results
+plot(all_ps_vegan_ord_meta, type = "t")
+
+
+all_ps_vegan_ord_meta %>% str()
+all_ps_vegan_ord_meta
+
+all_ps_vegan_ord_meta$stress
+
+#6b- extract NMDS scores from results
+
+all_vegan_meta <- (vegan::scores(all_ps_vegan_ord_meta) %>% 
+                     tidyr::as_tibble(rownames = "Sample number")) %>% 
+  mutate(`Sample number` = as.numeric(`Sample number`))
+# all_vegan_meta <- as.data.frame(vegan::scores(all_ps_vegan_ord_meta))
+
+#Using the scores function from vegan to extract the site scores and convert to a data.frame
+
+# all_vegan_meta$`Sample number` <- rownames(all_vegan_meta) %>% as.numeric()  
+
+# all_vegan_meta %>% left_join()# create a column of site names, from the rownames of data.scores
+
+# all_vegan_meta <- all_vegan_meta  %>% as_tibble() # create a column of site names, from the rownames of data.scores
+
+#7- bring NMDS scores to complete table
+
+all_vegan_meta_tbl <- left_join(x = unique(all_IDs_NMDS_tbl[,c(1:5)]),
+                                y = all_vegan_meta, by = "Sample number") %>% 
+  mutate(Primer=factor(Primer,levels = c("NeoFish", "MiFish", "COI")),
+         Sample = as.factor(Sample)) %>% 
+  select(-c("Sample number"))
+
+
+
+
+
+library(factoextra)
+library(ggforce)
+
+
+
+
+nmds_PLOT <- all_vegan_meta_tbl %>% 
+  # filter(Run %in% c("LGC_MiniSeq_1", "LGC_MiniSeq_2")) %>% 
+  ggplot(aes(x = NMDS1,y = NMDS2, col = Sample,
+             shape = Primer,
+             label = Sample,
+             Group = Primer))+
+  # stat_ellipse()+ 
+  geom_point(size = 11)+
+  theme_linedraw(base_size = 18) +
+  theme(legend.position="bottom") +
+  coord_fixed(ratio = 1) +
+  # ggrepel::geom_label_repel(label.size = 0.8,size = 3,min.segment.length = 2) +
+  # ggrepel::geom_text_repel(col="black",size = 3,min.segment.length = 2) +
+  # scale_shape_manual() %>% 
+  scale_color_manual(values = viridis::viridis(option = "turbo",n = 30, alpha = 1, begin = 0, end = 1, direction = 1)
+                     # labels = c("NeoFish", "MiFish", "COI"), values = alpha(colour = colors_norm )
+  ) +
+  annotate(geom = "text",
+           x=c(0.30),y=c(-0.3),label=c(paste0("Stress: ",all_ps_vegan_ord_meta$stress)),size=5)  +
+  
+  
+  # ADD ggforce's ellipses
+  ggforce::geom_mark_ellipse(inherit.aes = FALSE,
+                             aes(x = NMDS1,y = NMDS2,
+                                 group=`Sample`,
+                                 label=`Sample`),
+                             n = 100,
+                             expand = 0.07,
+                             label.fontsize = 20,con.cap = 0.1) 
+
+nmds_PLOT
+# 
+# ggsave(file = "~/prjcts/fish_eDNA/sfjq/results/figs/SFJQ_NMDS.pdf",
+#      plot = nmds_PLOT,
+#      device = "pdf",
+#      width = 14,
+#      height =10,
+#      dpi = 600)
+# 
+# ggsave(file = "~/prjcts/fish_eDNA/sfjq/results/figs/SFJQ_NMDS.svg",
+#      plot = nmds_PLOT,
+#      device = "svg",
+#      width = 14,
+#      height =10,
+#      dpi = 600)
+
+
+ggsave(file = paste0(figs_path,"/",prjct_radical,"_NMDS.pdf"),
+       plot = nmds_PLOT,
+       device = "png",
+       width = 31,
+       height =20,
+       units = "cm",
+       dpi = 300)
+
 
