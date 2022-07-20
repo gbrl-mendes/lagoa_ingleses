@@ -1,0 +1,384 @@
+---
+  title: "Análises _preliminares_ dos marcadores COI e 12 no _metabarcoding_ de ictioplancton"
+author: 
+  - "Fonseca, DT; Hilário, OH; Carvalho, DC"
+date: "07/12/2021"
+output:
+  html_document:
+  code_download: yes
+theme: flatly
+toc: true
+toc_depth: 4
+toc_float: true
+pdf_document: default
+editor_options:
+  chunk_output_type: console
+---
+  
+  ```{r setup, include=FALSE}
+
+```
+
+***
+  
+  \pagebreak
+
+# Bioinformática
+
+## Comparação  
+
+A partir dos resultados gerados em corridas independentes, iremos fazer comparações dos marcadores COI, MiFish & NeoFish.
+
+### Load _R libs_ and set paths
+
+```{r, eval=FALSE,echo=TRUE}
+# 0 - load libraries ----
+{
+  library(dplyr)
+  library(tidyr)
+  library(tibble)
+  library(stringr)
+  library(ggplot2)
+  library(ggbreak)
+  library(phyloseq)
+  library(Biostrings)
+  library(Matrix)
+  library(ShortRead)
+  library(dada2)
+  library(DECIPHER)
+  library(future)
+  library(vegan)
+}
+
+#important paths
+prjct_path <- "/home/heron/prjcts/fish_eDNA/ichthyo"
+
+notes_path <- paste0(prjct_path,"/notes")
+
+results_path <- paste0(prjct_path,"/results")
+
+figs_path <- paste0(results_path,"/figs")
+
+data_path <- paste0(prjct_path,"/data")
+
+
+prjct_radical <- "ichthyoplancton_metabarcoding"
+```
+
+<br>
+  
+  ### Import and prepare  data
+  
+  ```{r, eval=FALSE,echo=TRUE}
+
+all_IDs <- read.csv(file = paste0(data_path,"/","COI_e_12S_combinados.csv"),
+                    header = TRUE,
+                    check.names = FALSE,
+                    na.strings=c("NA","NaN", "")) %>% 
+  as_tibble()
+
+
+# factorize variables for better ploting
+all_IDs <- all_IDs %>% 
+  mutate(Sample = as.factor(Sample),
+         Primer = factor(Primer, levels = c("NeoFish","MiFish","COI")),
+         Run = as.factor(Run))
+
+```
+
+<br>
+  
+  ### Exploratory plots
+  
+  #### Bar Plot
+  
+  #### Presence point plot
+  
+
+```{r, eval=FALSE,echo=TRUE}
+#set colors for each primer
+
+colors_norm <- c("#017504", #neo 
+                 "#000791", #mif
+                 "#cf9b02") #coi
+scales::show_col(colors_norm)
+
+
+
+
+plot_Id_species_per_sample <- 
+  all_IDs %>% 
+  ggplot(aes(y = `final ID`,
+             x = Primer,
+             col = Primer,
+             size = `Relative abundance on sample (%)`,
+             alpha = 0.5)) +
+  geom_jitter(height = 0.01,width = 0.1) +
+  scale_color_manual(values = colors_norm,
+  ) +
+  facet_grid(Sample ~ .,scales ='free_y', space ='free_y')
+
+
+#save plot
+ggsave(file = paste0(figs_path,"/",prjct_radical,"_identified_species.pdf"),
+       plot = plot_Id_species_per_sample,
+       device = "pdf",
+       width = 30,
+       height = 200,
+       units = "cm",
+       dpi = 600,
+       limitsize = FALSE)
+
+ggsave(file = paste0(figs_path,"/",prjct_radical,"_identified_species.png"),
+       plot = plot_Id_species_per_sample,
+       device = "png",
+       width = 30,
+       height = 200,
+       units = "cm",
+       dpi = 600,
+       limitsize = FALSE)
+
+```
+
+<br>
+  
+  
+  ### NMDS
+  
+  ```{r, eval=FALSE,echo=TRUE}
+library(vegan)
+# data(dune)
+# decorana(dune)
+
+
+all_IDs$Sample %>% unique()
+all_IDs %>% colnames()
+
+# class(dune)
+#1- prepare data for entry in vegan ----
+
+all_IDs_NMDS_tbl <- all_IDs %>% 
+  filter(!(Sample %in% c("Cneg_PCR", "Neg1", "Neg2"))) %>%   #remove control samples
+  select(c(Sample,Primer,Run,`final ID`,`Relative abundance on sample (%)`)) %>% 
+  unite("Sample_name", Sample, Primer,remove = FALSE ) %>% 
+  group_by(Sample_name,Sample,`final ID`,Primer,Run) %>% 
+  summarise(`Relative abundance on sample (%)` = sum(`Relative abundance on sample (%)`)) %>% 
+  pivot_wider(c(Sample_name,Sample,Primer,Run),names_from = `final ID` ,values_from = `Relative abundance on sample (%)`) %>% 
+  mutate_if(is.numeric, ~replace(., is.na(.), 0)) %>% 
+  mutate("Sample number" = 0) %>% 
+  ungroup()  %>% 
+  select(`Sample number`, 1:(ncol(.)-1)) 
+
+#2- associate sample numbers to sample names ----
+for (sample in 1:nrow(all_IDs_NMDS_tbl)) {
+  
+  all_IDs_NMDS_tbl$`Sample number`[sample] <- sample
+  # all_IDs_NMDS_tbl$`Sample number`[sample] <- all_IDs_NMDS_tbl$Sample[sample] %>% stringr::str_remove(pattern = "PP0|PP")
+  
+}
+
+#tirando as amostras da ecomol pra facilitar
+
+# all_IDs_NMDS_tbl <- all_IDs_NMDS_tbl[all_ps_blst_vegan$Run %in% c("LGC_MiniSeq_1", "LGC_MiniSeq_2"),] 
+
+
+
+
+colnames(all_IDs_NMDS_tbl)
+hist(colSums(all_IDs_NMDS_tbl[,-c(1:5)]))
+hist(rowSums(all_IDs_NMDS_tbl[,-c(1:5)]))
+all_IDs_NMDS_tbl[,-c(1:5)]
+
+all_IDs_NMDS_tbl %>% select(Sample_name, `Sample number`) %>% unique()
+# all_ps_blst_vegan %>% select(`Sample number`, 1:(ncol(.)-1))
+
+#3- create data.frame of species counts: rownames are Sample numbers ----
+
+all_IDs_NMDS_df <- all_IDs_NMDS_tbl %>% 
+  select(-c("Sample_name", "Sample", "Primer","Run")) %>% 
+  select(base::sort(colnames(.))) %>% 
+  as.data.frame() 
+
+#4- name rows as Sample numbers and remove column ----
+row.names(all_IDs_NMDS_df) <- all_IDs_NMDS_df$`Sample number`
+
+all_IDs_NMDS_df <- all_IDs_NMDS_df %>% 
+  select(-c(`Sample number`))
+
+
+#5- 
+
+all_ps_ord <- decorana(veg = all_IDs_NMDS_df)
+
+all_ps_ord %>% summary()
+
+all_ps_ord %>% str()
+
+all_ps_ord$cproj
+
+
+plot(all_ps_ord)
+plot(all_ps_ord,type = "p")
+plot(all_ps_ord,type = "c") 
+
+points(all_ps_ord, display = "sites", cex = 0.8, pch=21, col="red", bg="yellow")
+text(all_ps_ord, display = "sites", cex=0.7, col="blue")
+text(all_ps_ord, display = "spec", cex=0.7, col="blue")
+
+
+
+#6- NMDS analisys ----
+
+
+
+# library(vegan)
+# data(varespec)
+#6a- Calculate distances ----
+all_IDs_vg_dist <- vegdist(all_IDs_NMDS_df, method="bray")
+
+vegan::scores(all_IDs_vg_dist)
+
+# all_ps_vg_dist_metaMDS <- metaMDS(comm = all_ps_vg_dist, autotransform = FALSE) 
+# actually autotransform = FALSE doesn't seem to change the results
+
+# plot(all_ps_vg_dist_metaMDS)
+
+# all_ps_vg_dist_metaMDS_2 <- metaMDS(comm = all_ps_vg_dist, distance = "bray", k =2)
+
+# plot(all_ps_vg_dist_metaMDS_2)
+
+#selecionar apenas espécies esperadas?
+
+all_IDs_NMDS_df %>% ncol()
+all_IDs_NMDS_df <- all_IDs_NMDS_df[,(colnames(all_IDs_NMDS_df) %in% expected_sps)]
+
+
+all_IDs_NMDS_df %>% ncol()
+all_IDs_vg_dist <- vegdist(all_IDs_NMDS_df, method="bray")
+
+all_ps_ord <- decorana(veg = all_IDs_NMDS_df)
+
+all_ps_ord %>% summary()
+
+all_ps_ord %>% str()
+
+all_ps_ord$cproj
+
+
+plot(all_ps_ord)
+plot(all_ps_ord,type = "p")
+plot(all_ps_ord,type = "c") 
+vegan::scores(all_IDs_vg_dist)
+
+
+
+
+# all_IDs_NMDS_df[,(colnames(all_IDs_NMDS_df) %in% expected_sps)] %>% colnames()
+# all_IDs_NMDS_df%>% colnames()
+
+
+
+all_ps_vegan_ord_meta <- metaMDS(veg = all_IDs_NMDS_df, comm = all_IDs_vg_dist)
+# actually autotransform = FALSE doesn't seem to change the results
+plot(all_ps_vegan_ord_meta, type = "t")
+
+
+all_ps_vegan_ord_meta %>% str()
+all_ps_vegan_ord_meta
+
+all_ps_vegan_ord_meta$stress
+
+#6b- extract NMDS scores from results
+
+all_vegan_meta <- (vegan::scores(all_ps_vegan_ord_meta) %>% 
+                     tidyr::as_tibble(rownames = "Sample number")) %>% 
+  mutate(`Sample number` = as.numeric(`Sample number`))
+# all_vegan_meta <- as.data.frame(vegan::scores(all_ps_vegan_ord_meta))
+
+#Using the scores function from vegan to extract the site scores and convert to a data.frame
+
+# all_vegan_meta$`Sample number` <- rownames(all_vegan_meta) %>% as.numeric()  
+
+# all_vegan_meta %>% left_join()# create a column of site names, from the rownames of data.scores
+
+# all_vegan_meta <- all_vegan_meta  %>% as_tibble() # create a column of site names, from the rownames of data.scores
+
+#7- bring NMDS scores to complete table
+
+all_vegan_meta_tbl <- left_join(x = unique(all_IDs_NMDS_tbl[,c(1:5)]),
+                                y = all_vegan_meta, by = "Sample number") %>% 
+  mutate(Primer=factor(Primer,levels = c("NeoFish", "MiFish", "COI")),
+         Sample = as.factor(Sample)) %>% 
+  select(-c("Sample number"))
+
+
+
+
+
+library(factoextra)
+library(ggforce)
+
+
+
+
+nmds_PLOT <- all_vegan_meta_tbl %>% 
+  # filter(Run %in% c("LGC_MiniSeq_1", "LGC_MiniSeq_2")) %>% 
+  ggplot(aes(x = NMDS1,y = NMDS2, col = Sample,
+             shape = Primer,
+             label = Sample,
+             Group = Primer))+
+  # stat_ellipse()+ 
+  geom_point(size = 11)+
+  theme_linedraw(base_size = 18) +
+  theme(legend.position="bottom") +
+  coord_fixed(ratio = 1) +
+  # ggrepel::geom_label_repel(label.size = 0.8,size = 3,min.segment.length = 2) +
+  # ggrepel::geom_text_repel(col="black",size = 3,min.segment.length = 2) +
+  # scale_shape_manual() %>% 
+  scale_color_manual(values = viridis::viridis(option = "turbo",n = 30, alpha = 1, begin = 0, end = 1, direction = 1)
+                     # labels = c("NeoFish", "MiFish", "COI"), values = alpha(colour = colors_norm )
+  ) +
+  annotate(geom = "text",
+           x=c(0.30),y=c(-0.3),label=c(paste0("Stress: ",all_ps_vegan_ord_meta$stress)),size=5)  +
+  
+  
+  # ADD ggforce's ellipses
+  ggforce::geom_mark_ellipse(inherit.aes = FALSE,
+                             aes(x = NMDS1,y = NMDS2,
+                                 group=`Sample`,
+                                 label=`Sample`),
+                             n = 100,
+                             expand = 0.07,
+                             label.fontsize = 20,con.cap = 0.1) 
+
+nmds_PLOT
+# 
+# ggsave(file = "~/prjcts/fish_eDNA/sfjq/results/figs/SFJQ_NMDS.pdf",
+#      plot = nmds_PLOT,
+#      device = "pdf",
+#      width = 14,
+#      height =10,
+#      dpi = 600)
+# 
+# ggsave(file = "~/prjcts/fish_eDNA/sfjq/results/figs/SFJQ_NMDS.svg",
+#      plot = nmds_PLOT,
+#      device = "svg",
+#      width = 14,
+#      height =10,
+#      dpi = 600)
+
+
+ggsave(file = paste0(figs_path,"/",prjct_radical,"_NMDS.pdf"),
+       plot = nmds_PLOT,
+       device = "png",
+       width = 31,
+       height =20,
+       units = "cm",
+       dpi = 300)
+
+```
+
+<br>
+  
+  **This is a partial report, intended to show the current state of analyses. Many procedures and conclusions might change as the pipeline evolves. If you notice errors/mistakes/typos, or have any suggestions, we would be glad to know. _heronoh@gmail.com_**
+  
