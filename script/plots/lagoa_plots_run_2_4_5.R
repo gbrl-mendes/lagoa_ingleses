@@ -487,7 +487,6 @@ fact_NMDS <- grouped_by_ID_NMDS %>%
 fact_NMDS$Sample %>% unique()
 fact_NMDS %>% colnames()
 
-# class(dune)
 # 1- Preparar os dados para entrar no vegan ----
 
 fact_NMDS_tbl <- fact_NMDS %>% 
@@ -495,107 +494,82 @@ fact_NMDS_tbl <- fact_NMDS %>%
   group_by(Sample,`Curated ID`, Expedition, Year, Point) %>%
   summarise(RRA = sum(RRA)) %>%
   pivot_wider(c(Sample, Expedition, Year, Point), names_from = `Curated ID` ,values_from = RRA) %>%
-  mutate_if(is.numeric, ~replace(., is.na(.), 0))
-
-################################ fiz até aqui ######################################################
-
-
-
-
-#2- associate sample numbers to sample names ----
-for (sample in 1:nrow(all_IDs_NMDS_tbl)) {
-  
-  all_IDs_NMDS_tbl$`Sample number`[sample] <- sample
-  # all_IDs_NMDS_tbl$`Sample number`[sample] <- all_IDs_NMDS_tbl$Sample[sample] %>% stringr::str_remove(pattern = "PP0|PP")
-  
-}
-
-#tirando as amostras da ecomol pra facilitar
-
-# all_IDs_NMDS_tbl <- all_IDs_NMDS_tbl[all_ps_blst_vegan$Run %in% c("LGC_MiniSeq_1", "LGC_MiniSeq_2"),] 
+  mutate_if(is.numeric, ~replace(., is.na(.), 0)) %>%
+  mutate("Sample number" = 0)  %>% 
+  ungroup() %>%
+  select(`Sample number`, 1:(ncol(.)-1))
 
 
+#2- Asscoiar um numero a cada amostra ----
 
+# Etapa necessaria para os dados entrarem no pacote vegan
+for (sample in 1:nrow(fact_NMDS_tbl)) {
+  fact_NMDS_tbl$`Sample number`[sample] <- sample
+  }
 
-colnames(all_IDs_NMDS_tbl)
-hist(colSums(all_IDs_NMDS_tbl[,-c(1:5)]))
-hist(rowSums(all_IDs_NMDS_tbl[,-c(1:5)]))
-all_IDs_NMDS_tbl[,-c(1:5)]
+colnames(fact_NMDS_tbl)
+hist(colSums(fact_NMDS_tbl[,-c(1:5)]))
+hist(rowSums(fact_NMDS_tbl[,-c(1:5)]))
+fact_NMDS_tbl[,-c(1:5)]
 
-all_IDs_NMDS_tbl %>% select(Sample_name, `Sample number`) %>% unique()
-# all_ps_blst_vegan %>% select(`Sample number`, 1:(ncol(.)-1))
+fact_NMDS_tbl %>% select(Sample, `Sample number`) %>% unique()
 
-#3- create data.frame of species counts: rownames are Sample numbers ----
+#3- Criar data.frame de contagem de especies: rownames sao Sample numbers ----
 
-all_IDs_NMDS_df <- all_IDs_NMDS_tbl %>% 
-  select(-c("Sample_name", "Sample", "Primer","Run")) %>% 
+fact_NMDS_df <- fact_NMDS_tbl %>% 
+  select(-c("Sample", "Expedition", "Year","Point")) %>% 
   select(base::sort(colnames(.))) %>% 
   as.data.frame() 
 
-#4- name rows as Sample numbers and remove column ----
-row.names(all_IDs_NMDS_df) <- all_IDs_NMDS_df$`Sample number`
+#4- name rows como Sample numbers e remover coluna ----
+row.names(fact_NMDS_df) <- fact_NMDS_df$`Sample number`
 
-all_IDs_NMDS_df <- all_IDs_NMDS_df %>% 
+fact_NMDS_df <- fact_NMDS_df %>% 
   select(-c(`Sample number`))
 
+#5- ----
 
-#5- 
+fact_NMDS_ps_ord <- decorana(veg = fact_NMDS_df)
 
-all_ps_ord <- decorana(veg = all_IDs_NMDS_df)
+fact_NMDS_ps_ord %>% summary()
 
-all_ps_ord %>% summary()
+fact_NMDS_ps_ord %>% str()
 
-all_ps_ord %>% str()
-
-all_ps_ord$cproj
+fact_NMDS_ps_ord$cproj
 
 
-plot(all_ps_ord)
-plot(all_ps_ord,type = "p")
-plot(all_ps_ord,type = "c") 
+plot(fact_NMDS_ps_ord)
+plot(fact_NMDS_ps_ord,type = "p")
+plot(fact_NMDS_ps_ord,type = "c") 
 
-points(all_ps_ord, display = "sites", cex = 0.8, pch=21, col="red", bg="yellow")
-text(all_ps_ord, display = "sites", cex=0.7, col="blue")
-text(all_ps_ord, display = "spec", cex=0.7, col="blue")
+points(fact_NMDS_ps_ord, display = "sites", cex = 0.8, pch=21, col="red", bg="yellow")
+text(fact_NMDS_ps_ord, display = "sites", cex=0.7, col="blue")
+text(fact_NMDS_ps_ord, display = "spec", cex=0.7, col="blue")
 
 
 
 #6- NMDS analisys ----
 
+#6a- Calculate distances
+
+fact_NMDS_vg_dist <- vegdist(fact_NMDS_df, method="bray")
+
+vegan::scores(fact_NMDS_vg_dist)
+
+fact_NMDS_ps_ord %>% ncol()
+fact_NMDS_ps_ord <- fact_NMDS_df[,(colnames(fact_NMDS_df) %in% expected_sps)]
 
 
-# library(vegan)
-# data(varespec)
-#6a- Calculate distances ----
-all_IDs_vg_dist <- vegdist(all_IDs_NMDS_df, method="bray")
+fact_NMDS_ps_ord %>% ncol()
+fact_NMDS_vg_dist <- vegdist(fact_NMDS_df, method="bray")
 
-vegan::scores(all_IDs_vg_dist)
+fact_NMDS_ps_ord <- decorana(veg = all_IDs_NMDS_df)
 
-# all_ps_vg_dist_metaMDS <- metaMDS(comm = all_ps_vg_dist, autotransform = FALSE) 
-# actually autotransform = FALSE doesn't seem to change the results
+fact_NMDS_ps_ord %>% summary()
 
-# plot(all_ps_vg_dist_metaMDS)
+fact_NMDS_ps_ord %>% str()
 
-# all_ps_vg_dist_metaMDS_2 <- metaMDS(comm = all_ps_vg_dist, distance = "bray", k =2)
-
-# plot(all_ps_vg_dist_metaMDS_2)
-
-#selecionar apenas espécies esperadas?
-
-all_IDs_NMDS_df %>% ncol()
-all_IDs_NMDS_df <- all_IDs_NMDS_df[,(colnames(all_IDs_NMDS_df) %in% expected_sps)]
-
-
-all_IDs_NMDS_df %>% ncol()
-all_IDs_vg_dist <- vegdist(all_IDs_NMDS_df, method="bray")
-
-all_ps_ord <- decorana(veg = all_IDs_NMDS_df)
-
-all_ps_ord %>% summary()
-
-all_ps_ord %>% str()
-
-all_ps_ord$cproj
+fact_NMDS_ps_ord$cproj
 
 
 plot(all_ps_ord)

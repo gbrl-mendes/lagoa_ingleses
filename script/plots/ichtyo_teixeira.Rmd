@@ -159,23 +159,21 @@ all_IDs %>% colnames()
 
 all_IDs_NMDS_tbl <- all_IDs %>% 
   filter(!(Sample %in% c("Cneg_PCR", "Neg1", "Neg2"))) %>%   #remove control samples
-  select(c(Sample,Primer,Run,`final ID`,`Relative abundance on sample (%)`)) %>% 
-  unite("Sample_name", Sample, Primer,remove = FALSE ) %>% 
-  group_by(Sample_name,Sample,`final ID`,Primer,Run) %>% 
-  summarise(`Relative abundance on sample (%)` = sum(`Relative abundance on sample (%)`)) %>% 
-  pivot_wider(c(Sample_name,Sample,Primer,Run),names_from = `final ID` ,values_from = `Relative abundance on sample (%)`) %>% 
-  mutate_if(is.numeric, ~replace(., is.na(.), 0)) %>% 
-  mutate("Sample number" = 0) %>% 
-  ungroup()  %>% 
-  select(`Sample number`, 1:(ncol(.)-1)) 
+  select(c(Sample,Primer,Run,`final ID`,`Relative abundance on sample (%)`)) %>% #selecionar quais colunas aparecem
+  unite("Sample_name", Sample, Primer,remove = FALSE ) %>% #cria a coluna sample_name com a uniao de sample e primer
+  group_by(Sample_name,Sample,`final ID`,Primer,Run) %>%
+  summarise(`Relative abundance on sample (%)` = sum(`Relative abundance on sample (%)`)) %>%
+  pivot_wider(c(Sample_name,Sample,Primer,Run),names_from = `final ID` ,values_from = `Relative abundance on sample (%)`) %>%
+  mutate_if(is.numeric, ~replace(., is.na(.), 0)) %>%
+  mutate("Sample number" = 0) %>%
+  ungroup()  %>%
+  select(`Sample number`, 1:(ncol(.)-1))
 
 #2- associate sample numbers to sample names ----
 for (sample in 1:nrow(all_IDs_NMDS_tbl)) {
-  
-  all_IDs_NMDS_tbl$`Sample number`[sample] <- sample
+all_IDs_NMDS_tbl$`Sample number`[sample] <- sample
   # all_IDs_NMDS_tbl$`Sample number`[sample] <- all_IDs_NMDS_tbl$Sample[sample] %>% stringr::str_remove(pattern = "PP0|PP")
-  
-}
+  }
 
 #tirando as amostras da ecomol pra facilitar
 
