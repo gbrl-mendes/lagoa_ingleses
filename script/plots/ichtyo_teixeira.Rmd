@@ -231,6 +231,7 @@ text(all_ps_ord, display = "spec", cex=0.7, col="blue")
 
 # library(vegan)
 # data(varespec)
+
 #6a- Calculate distances ----
 all_IDs_vg_dist <- vegdist(all_IDs_NMDS_df, method="bray")
 

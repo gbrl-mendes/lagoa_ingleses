@@ -516,9 +516,12 @@ fact_NMDS_tbl %>% select(Sample, `Sample number`) %>% unique()
 
 #3- Criar data.frame de contagem de especies: rownames sao Sample numbers ----
 
-fact_NMDS_df <- fact_NMDS_tbl %>% 
-  select(-c("Sample", "Expedition", "Year","Point")) %>% 
+fact_NMDS_df <- fact_NMDS_tbl  %>% 
   select(base::sort(colnames(.))) %>% 
+  relocate(c("Sample",
+             "Expedition",
+             "Year",
+             "Point")) %>% 
   as.data.frame() 
 
 #4- name rows como Sample numbers e remover coluna ----
@@ -526,6 +529,14 @@ row.names(fact_NMDS_df) <- fact_NMDS_df$`Sample number`
 
 fact_NMDS_df <- fact_NMDS_df %>% 
   select(-c(`Sample number`))
+
+
+colnames(fact_NMDS_df)[5:64] <- colnames(fact_NMDS_df)[5:64] %>% 
+  str_replace_all(pattern = " ",replacement = "_") %>% 
+  str_replace_all(pattern = "Gamb\xe1", replacement = "Gamba") %>% 
+  str_replace_all(pattern = "Sus_scrofa_\\*",replacement = "Sus_scrofa")
+  
+
 
 #5- ----
 
@@ -552,55 +563,49 @@ text(fact_NMDS_ps_ord, display = "spec", cex=0.7, col="blue")
 
 #6a- Calculate distances
 
-fact_NMDS_vg_dist <- vegdist(fact_NMDS_df, method="bray")
+fact_NMDS_vg_dist <- vegdist(fact_NMDS_df[5:64], method="bray")
 
 vegan::scores(fact_NMDS_vg_dist)
-
+# 
 fact_NMDS_ps_ord %>% ncol()
 fact_NMDS_ps_ord <- fact_NMDS_df[,(colnames(fact_NMDS_df) %in% expected_sps)]
 
+# 
+# fact_NMDS_ps_ord %>% ncol()
+# fact_NMDS_vg_dist <- vegdist(fact_NMDS_df, method="bray")
+# 
+# fact_NMDS_ps_ord <- decorana(veg = all_IDs_NMDS_df)
+# 
+# fact_NMDS_ps_ord %>% summary()
+# 
+# fact_NMDS_ps_ord %>% str()
+# 
+# fact_NMDS_ps_ord$cproj
+# 
+# 
+# plot(fact_NMDS_ps_ord)
+# plot(fact_NMDS_ps_ord,type = "p")
+# plot(fact_NMDS_ps_ord,type = "c") 
+# vegan::scores(fact_NMDS_ps_ord)
 
-fact_NMDS_ps_ord %>% ncol()
-fact_NMDS_vg_dist <- vegdist(fact_NMDS_df, method="bray")
-
-fact_NMDS_ps_ord <- decorana(veg = all_IDs_NMDS_df)
-
-fact_NMDS_ps_ord %>% summary()
-
-fact_NMDS_ps_ord %>% str()
-
-fact_NMDS_ps_ord$cproj
-
-
-plot(all_ps_ord)
-plot(all_ps_ord,type = "p")
-plot(all_ps_ord,type = "c") 
-vegan::scores(all_IDs_vg_dist)
-
-
-
-
-# all_IDs_NMDS_df[,(colnames(all_IDs_NMDS_df) %in% expected_sps)] %>% colnames()
-# all_IDs_NMDS_df%>% colnames()
-
-
-
-all_ps_vegan_ord_meta <- metaMDS(veg = all_IDs_NMDS_df, comm = all_IDs_vg_dist)
+fact_NMDS_ps_vegan_ord_meta <- metaMDS(veg = fact_NMDS_ps_ord[5:64], comm = fact_NMDS_df[5:64])
 # actually autotransform = FALSE doesn't seem to change the results
+plot(fact_NMDS_ps_vegan_ord_meta, type = "t")
+
+
+fact_NMDS_ps_vegan_ord_meta %>% str()
+fact_NMDS_ps_vegan_ord_meta
 plot(all_ps_vegan_ord_meta, type = "t")
+plot(all_ps_vegan_ord_meta, type = "p")
 
-
-all_ps_vegan_ord_meta %>% str()
-all_ps_vegan_ord_meta
-
-all_ps_vegan_ord_meta$stress
+fact_NMDS_ps_vegan_ord_meta$stress
 
 #6b- extract NMDS scores from results
 
-all_vegan_meta <- (vegan::scores(all_ps_vegan_ord_meta) %>% 
+all_vegan_meta <- (vegan::scores(fact_NMDS_ps_vegan_ord_meta) %>% 
                      tidyr::as_tibble(rownames = "Sample number")) %>% 
   mutate(`Sample number` = as.numeric(`Sample number`))
-# all_vegan_meta <- as.data.frame(vegan::scores(all_ps_vegan_ord_meta))
+# all_vegan_meta <- as.data.frame(vegan::scores(fact_NMDS_ps_vegan_ord_meta))
 
 #Using the scores function from vegan to extract the site scores and convert to a data.frame
 
@@ -612,10 +617,10 @@ all_vegan_meta <- (vegan::scores(all_ps_vegan_ord_meta) %>%
 
 #7- bring NMDS scores to complete table
 
-all_vegan_meta_tbl <- left_join(x = unique(all_IDs_NMDS_tbl[,c(1:5)]),
+all_vegan_meta_tbl <- left_join(x = unique(fact_NMDS_tbl[,c(1:4)]),
                                 y = all_vegan_meta, by = "Sample number") %>% 
-  mutate(Primer=factor(Primer,levels = c("NeoFish", "MiFish", "COI")),
-         Sample = as.factor(Sample)) %>% 
+  # mutate(Primer=factor(Primer,levels = c("NeoFish", "MiFish", "COI")),
+         # Sample = as.factor(Sample)) %>% 
   select(-c("Sample number"))
 
 
@@ -624,16 +629,49 @@ all_vegan_meta_tbl <- left_join(x = unique(all_IDs_NMDS_tbl[,c(1:5)]),
 
 library(factoextra)
 library(ggforce)
+library(ggord)
 
 
+
+
+nmds_PLOT_ord <- ggord(fact_NMDS_ps_vegan_ord_meta, 
+                       grp_in = fact_NMDS_tbl$Year, 
+                       ellipse = F,
+                       size = 10,
+                       arrow = 0.5, veccol = "dark grey",
+                       txt = 3,
+                       repel = T,
+                       max.overlaps = 55
+                       # ,
+                       # # facet=T,
+                       # cols = viridis::viridis(option = "turbo",n = nrow(all_IDs_NMDS_df), alpha = 1)
+)+
+  annotate(geom = "text",
+           x=c(0.2),
+           y=c(0.20),
+           label=c(paste0("Stress: ",format(round(fact_NMDS_ps_vegan_ord_meta$stress,4)))),
+           size=5) +
+  scale_colour_manual(name = "Samples", values = viridis::viridis(option = "turbo",n = 4, alpha = 1))
+# + 
+#   # labs(title='NEW LEGEND TITLE') +
+#   # labs(fill='NEW LEGEND TITLE') +
+#   # labs(colour='NEW LEGEND TITLE') + 
+#   labs(shape='NEW LEGEND TITLE') 
+#   
+
+nmds_PLOT_ord
+
+
+### Tirar as espécies com ids muito genéricas e fazer esse gráfico apenas
+### para 2021 separando os clusters por pontos coletados (L1, L2, L3 e L4)
 
 
 nmds_PLOT <- all_vegan_meta_tbl %>% 
   # filter(Run %in% c("LGC_MiniSeq_1", "LGC_MiniSeq_2")) %>% 
   ggplot(aes(x = NMDS1,y = NMDS2, col = Sample,
-             shape = Primer,
+             shape = Year,
              label = Sample,
-             Group = Primer))+
+             Group = Year))+
   # stat_ellipse()+ 
   geom_point(size = 11)+
   theme_linedraw(base_size = 18) +
@@ -646,17 +684,19 @@ nmds_PLOT <- all_vegan_meta_tbl %>%
                      # labels = c("NeoFish", "MiFish", "COI"), values = alpha(colour = colors_norm )
   ) +
   annotate(geom = "text",
-           x=c(0.30),y=c(-0.3),label=c(paste0("Stress: ",all_ps_vegan_ord_meta$stress)),size=5)  +
-  
-  
-  # ADD ggforce's ellipses
-  ggforce::geom_mark_ellipse(inherit.aes = FALSE,
-                             aes(x = NMDS1,y = NMDS2,
-                                 group=`Sample`,
-                                 label=`Sample`),
-                             n = 100,
-                             expand = 0.07,
-                             label.fontsize = 20,con.cap = 0.1) 
+           x=c(0.30),y=c(-0.3),label=c(paste0("Stress: ",fact_NMDS_ps_vegan_ord_meta$stress)),size=5)  
+
+# +
+#   
+#   
+#   # ADD ggforce's ellipses
+#   ggforce::geom_mark_ellipse(inherit.aes = FALSE,
+#                              aes(x = NMDS1,y = NMDS2,
+#                                  group=`Sample`,
+#                                  label=`Sample`),
+#                              n = 100,
+#                              expand = 0.07,
+#                              label.fontsize = 20,con.cap = 0.1) 
 
 nmds_PLOT
 # 
