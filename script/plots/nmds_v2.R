@@ -1,7 +1,7 @@
 ### NMDS
 
 library(vegan)
-# data(dune)
+# data(dune)  
 # decorana(dune)
 
 # class(dune)

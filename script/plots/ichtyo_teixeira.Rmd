@@ -91,6 +91,18 @@ all_IDs <- all_IDs %>%
   ### Exploratory plots
   
   #### Bar Plot
+
+```{r, eval=FALSE,echo=TRUE}
+
+all_IDs %>% colnames()
+  all_IDs %>% 
+    ggplot(
+      aes(x = Sample,
+          group =)
+    )
+
+```
+
   
   #### Presence point plot
   
