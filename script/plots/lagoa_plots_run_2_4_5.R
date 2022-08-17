@@ -23,6 +23,9 @@ editor_options:
   library(stringr)
   library(dplyr)
   library(ggplot2)
+  library(ggforce)
+  library(ggord)
+  library(sf)
   library(phyloseq)
   library(Biostrings)
   library(Matrix)
@@ -32,11 +35,9 @@ editor_options:
   library(vegan)
   library(base)
   library(factoextra)
-  library(ggforce)
-  library(ggord)
   }
 
-# Caminhos 
+# Caminhos ----
 {
   prjct_path <- "~/projetos/lagoa_ingleses/"
   
@@ -49,10 +50,10 @@ editor_options:
   prjct_radical <- "eDNA_Lagoa-dos-Ingleses"
 }
 
-# Obtencao dos dados
-{
-  raw_results_tbl <- read.csv(paste0(tbl_path,"/","run_2_4_5_lagoa_ingleses_v2.csv"), sep = ",", check.names = FALSE)
-  }
+# Obtencao dos dados ----
+
+raw_results_tbl <- read.csv(paste0(tbl_path,"/","run_2_4_5_lagoa_ingleses_v2.csv"), sep = ",", check.names = FALSE)
+
 
 # Tile Plots ----
 
@@ -110,7 +111,7 @@ grouped_by_ID_tbl <- raw_results_tbl %>%
 
 # Organizar as especies
 {
-grouped_by_ID_tbl$Curated ID %>% unique()%>% sort() %>%  paste0(collapse = '",\n"') %>% cat()
+grouped_by_ID_tbl$`Curated ID` %>% unique()%>% sort() %>%  paste0(collapse = '",\n"') %>% cat()
 grouped_by_ID_tbl$Sample %>% unique()%>% sort() %>%  paste0(collapse = '",\n"') %>% cat()
 }
 
@@ -118,8 +119,8 @@ grouped_by_ID_tbl$Sample %>% unique()%>% sort() %>%  paste0(collapse = '",\n"') 
 
   #com todas as identificacoes
 {
-grouped_by_ID_tbl <- grouped_by_Sample_ID_tbl %>%
-  mutate(Curated ID = factor(Curated ID,
+all_ID_tbl <- grouped_by_ID_tbl %>%
+  mutate(`Curated ID` = factor(`Curated ID`,
                              levels = rev(c(
                                         "Actinopteri",
                                         "Acinocheirodon melanogramma",
@@ -185,8 +186,8 @@ grouped_by_ID_tbl <- grouped_by_Sample_ID_tbl %>%
 
 # Sem os grupos
 {
-  grouped_by_Sample_ID_tbl <- grouped_by_Sample_ID_tbl %>%
-    mutate(Curated ID = factor(Curated ID,
+  few_ID_tbl <- grouped_by_ID_tbl %>%
+    mutate(`Curated ID` = factor(`Curated ID`,
                               levels = rev(c(
                                  #"Actinopteri",
                                  "Acinocheirodon melanogramma",
@@ -236,7 +237,7 @@ grouped_by_ID_tbl <- grouped_by_Sample_ID_tbl %>%
                                  "Wertheimeria maculata",
                                  #nao-peixes
                                  "Cavia magna",
-                                 "Cutibacterium acnes",
+                                 #"Cutibacterium acnes",
                                  "Bos taurus",
                                  "Canis familiaris",
                                  "Didelphis albiventris (Gamba)",
@@ -253,7 +254,7 @@ grouped_by_ID_tbl <- grouped_by_Sample_ID_tbl %>%
 # Criacao do Tile Plot das amostras da Lagoa dos Ingleses sequenciadas nas corridas 2, 4 e 5
 # exibindo  por ponto, por mês
 {
-grouped_by_ID_tbl %>%
+few_ID_tbl %>%
   # transformando variaveis categoricas em fatores com niveis
   mutate(Expedition = factor(Expedition)) %>%
   mutate(Sample = factor(Sample,
@@ -281,7 +282,7 @@ grouped_by_ID_tbl %>%
   mutate(Expedition = factor(Expedition)) %>%
  
   # filtrando apenas o que vc quer mostras
-  filter(!Curated ID %in% c("Astyanax",
+  filter(!`Curated ID` %in% c("Astyanax",
                             "Characidae",
                             "Cichlidae",
                             "Hoplias",
@@ -291,11 +292,16 @@ grouped_by_ID_tbl %>%
   filter(RRA >=0.01) %>%
   
   # retirar os NA
-  filter(!is.na(Curated ID)) %>%
+  filter(!is.na(`Curated ID`)) %>%
+    
+  # retirando as amostras de 2020
+
+  filter(Expedition %in% c("out/21",
+                         "Nov/21")) %>%
     
     #Tile plot
    
-     ggplot(aes(y = Curated ID,
+     ggplot(aes(y = `Curated ID`,
              x = Point,
              fill = RRA,
              # col = Expedition,
@@ -315,7 +321,7 @@ grouped_by_ID_tbl %>%
   labs(fill='Relative Read\nAbundance (%)',
        x = "Amostras",
        y= "Espécies") +
-  geom_hline(yintercept = c(7.5)) +
+  geom_hline(yintercept = c(5.5)) +
   scale_fill_continuous(type = "viridis") +
        theme(text=element_text(size = 10, face = "bold"))
     
@@ -324,7 +330,7 @@ grouped_by_ID_tbl %>%
 # Criacao do Tile Plot das amostras da Lagoa dos Ingleses sequenciadas nas corridas 2, 4 e 5
 # Exibindo  por ano apenas
 {
-  grouped_by_Sample_ID_tbl %>%
+  few_ID_tbl %>%
     #transformando variaveis categoricas em fatores com niveis
     mutate(Expedition = factor(Expedition)) %>%
     mutate(Sample = factor(Sample,
@@ -352,7 +358,7 @@ grouped_by_ID_tbl %>%
     mutate(Expedition = factor(Expedition)) %>%
     
     #filtrando apenas o que vc quer mostras
-    filter(!Curated ID %in% c("Astyanax",
+    filter(!`Curated ID` %in% c("Astyanax",
                               "Characidae",
                               "Cichlidae",
                               "Hoplias",
@@ -362,11 +368,11 @@ grouped_by_ID_tbl %>%
     filter(RRA >=0.01) %>%
     
     #retirar os NA
-    filter(!is.na(Curated ID)) %>%
+    filter(!is.na(`Curated ID`)) %>%
     
     #Tile plot
     
-    ggplot(aes(y = Curated ID,
+    ggplot(aes(y = `Curated ID`,
                x = Year,
                fill = RRA,
                # col = Expedition,
@@ -733,11 +739,10 @@ colnames(fact_NMDS_df) <- colnames(fact_NMDS_df) %>%
 
 }
 
-# Bar Plots ----
-colnames(raw_results_tbl)
+# Bar Plots Ponto/Mes ----
 
-curated_tbl <- raw_results_tbl %>%
-  filter(!`Curated ID` %in% c("Actinopteri",
+alpha_tbl <- raw_results_tbl %>%
+  filter(!`Curated ID` %in% c("Actinopteri", ## tirando as ASVs que nao foram identificadas a nivel de especie, nao-peixes e NA
                               # "Astyanax",
                               "Characidae",
                               # "Characidium",
@@ -756,47 +761,95 @@ curated_tbl <- raw_results_tbl %>%
                               "Nannopterum brasilianus",
                               "Oryctolagus cuniculus (Coelho-bravo)",
                               "Progne chalybea (Andorinha-grande)",
-                              "Sus scrofa")) %>% 
-  group_by(Sample, Read_origin, Primer, `Curated ID`, Year, Point) %>% 
+                              "Sus scrofa")) %>%
+  mutate("Mês" = str_split_fixed(string = .$Sample, # criando uma nova coluna quebrando as infos da coluna Sample
+                                  pattern = "_",
+                                  n = 2)[,2]) %>%
+  mutate(Mês = factor(Mês, levels = c("out21", "nov21"))) %>%
+  filter(!Sample %in% c("LI1-neo-mi", 
+                        "L2_dez20")) %>% 
+  group_by(Sample, 
+           Read_origin,
+           Primer,
+           `Curated ID`,
+           Year,
+           Point,
+           Expedition,
+           Mês) %>% 
   summarize(`Num ASVs` = length(unique(`ASV (Sequence)`)),
     `Num OTUs` = length(unique(`OTU`)),
-    `ID Abundance on sample (%)` = sum(`Relative abundance on sample`)
-    ) %>% 
-  ungroup() %>% 
-  mutate(Year = factor(Year))
+    `ID Abundance on sample (%)` = sum(`Relative abundance on sample`),
+    `Ponto` = Point) %>% 
+  mutate(Sample = factor(Sample, levels = c("L1_out21",
+                                            "L1_nov21",
+                                            "L2_out21",
+                                            "L2_nov21",
+                                            "L3_out21",
+                                            "L3_nov21",
+                                            "L4_out21",
+                                            "L4_nov21"))) %>% 
+  ungroup()
 
-library(ggh4x)
+## Facetar por ponto 
 
-# sample_riqueza_bar <-
-  curated_tbl$`Curated ID` %>% unique()
-  
-  curated_tbl %>% 
+print(alpha_plot_ponto <- alpha_tbl %>% 
   mutate(`Curated ID` = factor(`Curated ID`)) %>% 
   ggplot(aes(x = Sample,
-             # y = `Final Curated ID`,
-             fill = Year)) +
+             fill = Mês)) + ## preenchendo as cores por mes de coleta
   geom_bar(stat = "count", position = "stack") +
-  # viridis::scale_fill_viridis(discrete = TRUE,option = "turbo") + 
   guides(col = guide_legend(nrow = 6)) +
   xlab("Amostra") +
   ylab("Riqueza de espécies") +
-  ggtitle(label = "Riqueza de identificações únicas por amostra") +
+  ggtitle(label = "Riqueza de espécies por amostra") +
+  
   theme_bw(base_size = 16) +
-  theme(legend.position = "bottom")+
-  
+  theme(legend.position = "bottom") +
   theme(axis.text.x = element_text(angle = 45,hjust = 1)) +
-  
-  facet_grid2(cols = vars(Point),
+  geom_text(stat='count', ## codigo que exibe dentro das barras a contagem
+            aes(label=..count..),
+            position = position_dodge(width = 0.9),
+            vjust = 1.4,
+            colour = "#ffffff", size = 6) +
+  facet_grid2(cols = vars(Point), ##facetando por ponto
               scales = "free_x",
               axes = "all",
               space = "free_x",
-              independent ='x'
+              independent ='x') +
+  scale_fill_manual(values = viridis::viridis(n=6)[c(2,5)])
   )
 
-# Calculo da proporcao de sequencias de peixes e nao-peixes ----
+## Facetar por Mes 
 
-## Utilizando a abundancia relativa nas amostras para calcular a proporcao
-  grouped_by_ID_tbl <- raw_results_tbl %>%
+print(alpha_plot_mes <- alpha_tbl %>% 
+  mutate(`Curated ID` = factor(`Curated ID`)) %>% 
+  ggplot(aes(x = Sample,
+             fill = Ponto)) + ## preenchendo as barras por mes de coleta
+  geom_bar(stat = "count", position = "stack") +
+  guides(col = guide_legend(nrow = 6)) +
+  xlab("Amostra") +
+  ylab("Riqueza de espécies") +
+  ggtitle(label = "Riqueza de espécies por amostra") +
+  theme_bw(base_size = 16) +
+  theme(legend.position = "bottom") +
+  theme(axis.text.x = element_text(angle = 45,hjust = 1)) +
+  geom_text(stat='count', ## codigo que exibe dentro das barras a contagem
+            aes(label=..count..),
+            position = position_dodge(width = 0.9),
+            vjust = 1.4,
+            colour = "#ffffff", size = 6) +
+  facet_grid2(cols = vars(Mês), ##facetando por mes
+              scales = "free_x",
+              axes = "all",
+              space = "free_x",
+              independent ='x') +
+  scale_fill_manual(values = viridis::viridis(n=10)[c(1,7,5,9)])
+  )
+
+# Bar Plots Proporcao Especies/Ids ----
+
+## Utilizando a abundancia relativa nas amostras para calcular a proporcao de peixes
+{
+  grouped_by_ID_especie_tbl <- raw_results_tbl %>%
     select(c(
       "Sample",
       "Expedition",
@@ -809,7 +862,7 @@ library(ggh4x)
       "Point",
       "Abundance",
       "Sample total abundance"
-          )) %>% 
+    )) %>% 
     mutate("Peixe" = if_else (`Curated ID` %in% c("",
                                                   "Cutibacterium acnes",
                                                   "Bos taurus",
@@ -820,16 +873,109 @@ library(ggh4x)
                                                   "Nannopterum brasilianus",
                                                   "Oryctolagus cuniculus (Coelho-bravo)",
                                                   "Progne chalybea (Andorinha-grande)",
-                                                  "Sus scrofa"),"FALSE", "TRUE")) %>% 
-    group_by(Peixe) %>% 
-    summarize("Peixe" = unique(Peixe),
-              `RRA` = sum(`Relative abundance on sample`)/11,
-              `ASVs` = sum(`Abundance`),
-              `Proporcao` = sum(`ASVs` / 2730833 * 100)
-              ) %>% 
-    ungroup() 
+                                                  "Sus scrofa"),"FALSE", "TRUE")) %>%
+    mutate("Especie" = if_else (`Curated ID` %in% c("Hoplias",
+                                                    "Cichla",
+                                                    "Actinopteri",
+                                                    "Characiformes",
+                                                    "Siluriformes",
+                                                    "Astyanax",
+                                                    "Characidium",
+                                                    "Cichlidae",
+                                                    "Characidae",
+                                                    "Pimelodus"), "FALSE", "TRUE")) %>% 
+    group_by(Peixe, Especie) %>% 
+    summarize("Peixe" = unique(Peixe), #identificacao se as ASVs sao de peixes ou nao-peixes
+              "Especie" = unique(Especie), #identificacao se as ASVs foram identificadas ao nivel de especie
+              # `RRA` = sum(`Relative abundance on sample`)/11, #proporcao calculada com a RRA
+              `ASVs` = sum(`Abundance`), #numero de ASVs
+              `Proporcao` = sum(`ASVs` / 2730833 * 100) #proporcao calculada com o total de ASVs
+    ) %>%
+    ungroup()
+}   
+
+## Barplots com os resultados das proporcoes
+{
+  ### Proporcao de peixes
+  peixe <- c("Não-peixes", "Peixes")
+  ASVs <- c(25130, (160274 + 2545429))
+  proporcao <- c(0.92, (5.87 + 93.21))
+  peixes <- data_frame(peixe, ASVs, proporcao)
   
-## Utilizando o resultado da proporcao para obter o numero de ASVs
-  grouped_by_ID_tbl <- grouped_by_ID_tbl %>% 
-    mutate("ASVs" = raw_results_tbl$Abundance * `RRA`)
+  ## Barplots da proporcao de peixes
+  {
+    print(plot_peixe <- peixes %>% 
+            ggplot(aes(x=peixe, y=proporcao, fill = peixe)) + 
+            geom_bar(stat = "identity") +
+            geom_text(aes(label = proporcao), ## colocar o valor da proporcao acima das barras
+                      position = position_dodge(width = 0.9),
+                      vjust = -0.1,
+                      colour = "black", size = 6) +
+            guides(col = guide_legend(nrow = 6)) +
+            xlab("Espécies") + ## alterar o nome do eixo x
+            ylab("Proporção de ASVs %") + ## alterar o nome do eixo y
+            ggtitle(label = "Proporção de identificações associadas a peixes") + ## alterar o titulo do plot
+            theme_bw(base_size = 16) +
+            scale_fill_manual(values = viridis::viridis(n=4)[c(2,3)]) +
+            guides(fill = guide_legend("Tipo")) ## alterar o titulo da legenda
+          )
+  }
+  
+  ### Proporcao de ids
+  especie <- c("Espécie", "Outros")
+  e_ASVs <- c(2545429, 160274)
+  e_proporcao <- c(0.94, 0.06)
+  especies <- data_frame(especie, e_ASVs, e_proporcao)
+
+  ## Barplots da proporcao de ids
+  
+  print(plot_ids <- especies %>% 
+          ggplot(aes(x = especie, y = e_proporcao, fill = especie)) + 
+          geom_bar(stat = "identity") +
+          geom_text(aes(label = e_proporcao), ## colocar o valor da proporcao acima das barras
+                    position = position_dodge(width = 0.9),
+                    vjust = -0.1,
+                    colour = "black", size = 6) +
+          guides(col = guide_legend(nrow = 6)) +
+          xlab("Nível taxonômico") + ## alterar o nome do eixo x
+          ylab("Proporção de ASVs %") + ## alterar o nome do eixo y
+          ggtitle(label = "Proporção de identificações e respectivos níveis taxonômicos") + ## alterar o titulo do plot
+          theme_bw(base_size = 16) +
+          scale_fill_manual(values = viridis::viridis(n=4)[c(2,3)]) +
+          guides(fill = guide_legend("Nível")) ## alterar o titulo da legenda
+        )
+  }
+
+# Mapa da Lagoa dos Ingleses e os respectivos pontos ----
+  
+  # Localizacao da Lagoa dos Ingleses: 
+  lagoa_ingleses <- c(-20.17874819739011, -43.96130043170407)
+  
+  # Localizacao dos pontos:
+  {
+    fundacao_4 <- c(-20.163437545269186, -43.955100550084005)
+    ponte_3 <- c(-20.173468237193315, -43.950422777741935)
+    barragem_2 <- c(-20.177738135335836, -43.94299842263384)
+    prainha_1 <- c(-20.17910770033768, -43.95947791566818)
+    pontos <- data.frame(prainha_1, barragem_2, ponte_3, fundacao_4)
+    }
+      
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+
   
