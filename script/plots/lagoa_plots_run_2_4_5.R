@@ -51,6 +51,7 @@ raw_results_tbl <- read.csv(paste0(tbl_path,"/","run_2_4_5_lagoa_ingleses_v2.csv
 
 raw_results_tbl$`Curated ID`[raw_results_tbl$`Curated ID` %in% c("Oreochromis niloticus")] <- "Tilapia rendalli" # Oreochromis niloticus é Tilapia
 
+
 # Tile Plots ----
 
 ## Criacao das tabelas all_ids_tbl e few_ids_tbl
@@ -159,7 +160,7 @@ raw_results_tbl$`Curated ID`[raw_results_tbl$`Curated ID` %in% c("Oreochromis ni
                                      "Progne chalybea (Andorinha-grande)",
                                      "Sus scrofa"
                                    ))))
-  }
+    }
   
   ### Sem os grupos
   {
@@ -227,125 +228,145 @@ raw_results_tbl$`Curated ID`[raw_results_tbl$`Curated ID` %in% c("Oreochromis ni
                                      "Sus scrofa"
                                    ))))
   }
-  
-}
+  }
 
 ## Criacao do Tile Plot das amostras da Lagoa dos Ingleses sequenciadas nas corridas 2, 4 e 5
 
-### Por ponto/mês
+### Por ponto
 
-  ## Filtrando as ids
+  ## Tile plot filtrando as ids
   {
-few_ID_tbl %>% 
-    mutate(Expedition = factor(Expedition)) %>% # transformando variaveis categoricas em fatores com niveis
-    mutate(Sample = factor(Sample,
-                           levels = c("L1_nov21",
-                                    "L1_out21",
-                                    "L2_nov21",
-                                    "L2_out21",
-                                    "L3_nov21",
-                                    "L3_out21",
-                                    "L4_nov21",
-                                    "L4_out21",
-                                    "L1-neo-mi",
-                                    "L2 Dez/20",
-                                    "L2 Nov/20"
-                                    ))) %>% 
-    mutate(Expedition = factor(Expedition, 
-                               levels = c("Nov_Dec/20",
-                                          "Nov/20",
-                                          "Dec/20",
-                                          "out/21",
-                                          "Nov/21"
-                                          ))) %>% 
-    mutate(Point = factor(Point)) %>%
-    mutate(File_name = factor(File_name)) %>%
-    mutate(Expedition = factor(Expedition)) %>%
-    # filter(RRA >= 0.01) %>% # retirando as ASVs "espurias", com abundancia menor que 0.01 ATUAL: Heron pediu para voltar com elas
-    filter(!is.na(`Curated ID`)) %>%   # retirar os NA
-    filter(Expedition %in% c("out/21", # deixando apenas as amostras de 2021
-                             "Nov/21")) %>%
-    ### Tile plot
-    ggplot(aes(y = `Curated ID`,
-               # x = Point,
-               x = Expedition,
-               fill = RRA
-               )) +
-    geom_tile() +
-    # facet_grid(~Expedition,
-    facet_grid(~Point,
-               scales = "free_x",
-               space = "free_x") +
-    labs(fill ='Abundância \nrelativa (%)',
-         x = "Amostras",
-         y= "Espécies") +
-    ggtitle(label = "Abundância relativa de ASVs por amostra em cada mês") +
-    geom_hline(yintercept = c(8.5)) +
-    scale_fill_continuous(trans = "log10", type = "viridis") +
-    theme(text=element_text(size = 10, face = "bold")) +
-    guides(col = guide_legend(nrow = 6)) +
-    theme_bw(base_size = 16) +
-    theme(plot.title = element_text(hjust=0.5))
-  }
+    tile_ponto_few <- few_ID_tbl %>%
+      mutate(Expedition = factor(Expedition)) %>% # transformando variaveis categoricas em fatores com niveis
+      mutate(Sample = factor(Sample,
+                             levels = c("L1_nov21",
+                                        "L1_out21",
+                                        "L2_nov21",
+                                        "L2_out21",
+                                        "L3_nov21",
+                                        "L3_out21",
+                                        "L4_nov21",
+                                        "L4_out21",
+                                        "L1-neo-mi",
+                                        "L2 Dez/20",
+                                        "L2 Nov/20"
+                                        ))) %>%
+      mutate(Expedition = factor(Expedition,
+                                 levels = c("Nov_Dec/20",
+                                            "Nov/20",
+                                            "Dec/20",
+                                            "out/21",
+                                            "Nov/21"
+                                            ))) %>%
+      mutate(Point = factor(Point)) %>%
+      mutate(File_name = factor(File_name)) %>%
+      mutate(Expedition = factor(Expedition)) %>%
+      # filter(RRA >= 0.01) %>% # retirando as ASVs "espurias", com abundancia menor que 0.01 ATUAL: Heron pediu para voltar com elas
+      filter(!is.na(`Curated ID`)) %>%   # retirar os NA
+      filter(Expedition %in% c("out/21", # deixando apenas as amostras de 2021
+                               "Nov/21")) %>%
+      ### Tile plot
+      ggplot(aes(y = `Curated ID`, 
+                 # x = Point,
+                 x = Expedition,
+                 fill = RRA
+                 )) +
+      geom_tile() +
+      # geom_text(aes(label= RRA),
+      geom_text(aes(label= sprintf("%0.2f", round(RRA, digits = 2))), # exibindo os valores de RRA dentro dos tiles para facilitar a discussao (opcional)
+                    colour = "black", size = 3
+                    ) +
+        # facet_grid(~Expedition, # facetando por mes
+      facet_grid(~Point, # facetando por ponto
+                   scales = "free_x",
+                   space = "free_x") +
+      labs(fill ='Abundância \nrelativa (%)',
+               x = "Amostras",
+               y= "Espécies") +
+      ggtitle(label = "Espécies identificadas em cada ponto") +
+      geom_hline(yintercept = c(8.5)) + # linha que separa as especies de peixes e nao-peixes
+      scale_fill_continuous(
+        trans = "log10", # exibir a abundancia em escala logaritmica para favorecer a exibicao de baixo RRA
+        breaks = c(0.001, 0.01, 0.1, 1, 10, 75), # definindo os valores que aparecem na escala
+        type = "viridis") +
+      theme(text=element_text(size = 10, face = "bold")) +
+      guides(col = guide_legend(nrow = 6)) +
+      theme_bw(base_size = 16) +
+      theme(plot.title = element_text(hjust = 0.5))
+      
+      ## Plotando
+      ggsave(plot = tile_ponto_few, filename = "/home/gabriel/projetos/lagoa_ingleses/results/figuras/agosto/tile_plots/tile_ponto_few.pdf",
+           device = "pdf", units = "cm", height = 20, width = 30, dpi = 600)
+}
 
-  ## Exibindo todas as ids
+  ## Title plot exibindo todas as ids
   {
-  all_ID_tbl %>% 
-    mutate(Expedition = factor(Expedition)) %>% # transformando variaveis categoricas em fatores com niveis
-    mutate(Sample = factor(Sample,
-                           levels = c("L1_nov21",
-                                      "L1_out21",
-                                      "L2_nov21",
-                                      "L2_out21",
-                                      "L3_nov21",
-                                      "L3_out21",
-                                      "L4_nov21",
-                                      "L4_out21",
-                                      "L1-neo-mi",
-                                      "L2 Dez/20",
-                                      "L2 Nov/20"
-                           ))) %>% 
-    mutate(Expedition = factor(Expedition, 
-                               levels = c("Nov_Dec/20",
-                                          "Nov/20",
-                                          "Dec/20",
-                                          "out/21",
-                                          "Nov/21"
-                               ))) %>% 
-    mutate(Point = factor(Point)) %>%
-    mutate(File_name = factor(File_name)) %>%
-    mutate(Expedition = factor(Expedition)) %>%
-    # filter(RRA >= 0.01) %>% # retirando as ASVs "espurias", com abundancia menor que 0.01 
-    # filter(!is.na(`Curated ID`)) %>%   # retirar os NA
-    # filter(Expedition %in% c("out/21", # deixando apenas as amostras de 2021
-    #                          "Nov/21")) %>%
-    ### Tile plot
-    ggplot(aes(y = `Curated ID`,
-               x = Point,
-               fill = RRA
-    )) +
-    geom_tile() +
-    facet_grid(~Expedition,
-               scales = "free_x",
-               space = "free_x") +
-    labs(fill ='Abundância \nrelativa (%)',
-         x = "Amostras",
-         y= "Espécies") +
-    ggtitle(label = "Abundância relativa de ASVs por amostra em cada mês (todas ids)") +
-    geom_hline(yintercept = c(11.5)) +
-    scale_fill_continuous(trans = "log10", type = "viridis") +
-    theme(text=element_text(size = 14)) +
-    guides(col = guide_legend(nrow = 6)) +
-    theme(plot.title = element_text(hjust=0.5))
+    tile_ponto_all <- all_ID_tbl %>%
+      mutate(Expedition = factor(Expedition)) %>% # transformando variaveis categoricas em fatores com niveis
+      mutate(Sample = factor(Sample,
+                             levels = c("L1_nov21",
+                                        "L1_out21",
+                                        "L2_nov21",
+                                        "L2_out21",
+                                        "L3_nov21",
+                                        "L3_out21",
+                                        "L4_nov21",
+                                        "L4_out21",
+                                        "L1-neo-mi",
+                                        "L2 Dez/20",
+                                        "L2 Nov/20"
+                                        ))) %>%
+      mutate(Expedition = factor(Expedition,
+                                 levels = c("Nov_Dec/20",
+                                            "Nov/20",
+                                            "Dec/20",
+                                            "out/21",
+                                            "Nov/21"
+                                            ))) %>%
+      mutate(Point = factor(Point)) %>%
+      mutate(File_name = factor(File_name)) %>%
+      mutate(Expedition = factor(Expedition)) %>%
+      # filter(RRA >= 0.01) %>% # retirando as ASVs "espurias", com abundancia menor que 0.01 #exibindo todas as Ids, mesmo com RRA abaixo de 0.01
+      # filter(!is.na(`Curated ID`)) %>%   # retirar os NA
+      # filter(Expedition %in% c("out/21", # deixando apenas as amostras de 2021
+      #                          "Nov/21")) %>%
+      ### Tile plot
+      ggplot(aes(y = `Curated ID`, 
+                 # x = Point,
+                 x = Expedition,
+                 fill = RRA
+                 )) +
+      geom_tile() +
+      geom_text(aes(label= sprintf("%0.2f", round(RRA, digits = 2)))) + # exibindo os valores de RRA dentro dos tiles para facilitar a discussao (opcional)
+      # facet_grid(~Expedition, # facetando por mes
+      facet_grid(~Point, # facetando por ponto
+                 scales = "free_x",
+                 space = "free_x") +
+      labs(fill ='Abundância \nrelativa (%)',
+           x = "Amostras",
+           y = "Espécies") +
+      ggtitle(label = "Espécies identificadas em cada ponto e mês (todas ids)") +
+      geom_hline(yintercept = c(11.5)) +
+      scale_fill_continuous(
+        trans = "log10", # exibir a abundancia em escala logaritmica para favorecer a exibicao de baixo RRA
+          breaks = c(0.001, 0.01, 0.1, 1, 10, 75), # definindo os valores que aparecem na escala
+        type = "viridis") +
+      theme(text=element_text(size = 14)) +
+      guides(col = guide_legend(nrow = 6)) +
+      theme(plot.title = element_text(hjust=0.5))
+    
+    ## Plotando
+    ggsave(plot = tile_ponto_all, filename = "/home/gabriel/projetos/lagoa_ingleses/results/figuras/agosto/tile_plots/tile_ponto_all.pdf",
+           device = "pdf", units = "cm", height = 25, width = 30, dpi = 600)
 }
 
 ### Por Ano
 
   ## Exibindo por ano filtrando ids
   {
-  few_ID_tbl %>% 
-    mutate(Expedition = factor(Expedition)) %>% #transformando variaveis categoricas em fatores com niveis
-    mutate(Sample = factor(Sample,
+    tile_ano_few <- few_ID_tbl %>%
+      mutate(Expedition = factor(Expedition)) %>% #transformando variaveis categoricas em fatores com niveis
+      mutate(Sample = factor(Sample,
                            levels = c("L1_nov21",
                                       "L1_out21",
                                       "L2_nov21",
@@ -357,205 +378,230 @@ few_ID_tbl %>%
                                       "L1-neo-mi",
                                       "L2 Dez/20",
                                       "L2 Nov/20"
-                           ))) %>% 
-    mutate(Expedition = factor(Expedition,
+                           ))) %>%
+      mutate(Expedition = factor(Expedition,
                                levels = c("Nov_Dec/20",
                                           "Nov/20",
                                           "Dec/20",
                                           "out/21",
                                           "Nov/21"
                                ))) %>%
-    mutate(Point = factor(Point)) %>%
-    mutate(File_name = factor(File_name)) %>%
-    mutate(Expedition = factor(Expedition)) %>%
-    filter(!`Curated ID` %in% c("Astyanax", #retirando as ids a nivel de genero
+      mutate(Point = factor(Point)) %>%
+      mutate(File_name = factor(File_name)) %>%
+      mutate(Expedition = factor(Expedition)) %>%
+      filter(!`Curated ID` %in% c("Astyanax", #retirando as ids a nivel de genero
                               "Characidae",
                               "Cichlidae",
                               "Hoplias",
                               "Pimelodus")) %>%
-    # filter(RRA >=0.01) %>% #retirando as ASVs "espurias", com abundancia menor que 0.01 ATUAL. Heron pediu para voltar com essas 
-    filter(!is.na(`Curated ID`)) %>% #retirar os NA
-    ### Tile plot
-    ggplot(aes(y = `Curated ID`, 
+      # filter(RRA >= 0.01) %>% #retirando as ASVs "espurias", com abundancia menor que 0.01 ATUAL. Heron pediu para voltar com essas 
+      filter(!is.na(`Curated ID`)) %>% #retirar os NA
+      ### Tile plot
+      ggplot(aes(y = `Curated ID`, 
                x = Year,
                fill = RRA,
-    )) +
-    scale_x_continuous(breaks = 0:2100) +
-    geom_tile() + 
-    labs(fill='Abundância \nrelativa (%)',
-         x = "Ano",
-         y = "Espécies") +
-    geom_hline(yintercept = c(10.5)) +
-    scale_fill_continuous(trans = "log10", type = "viridis") + #Exibindo na escala de log10 ja que ha muitas reads com baixa abundancia
-    ggtitle(label = "Abundância relativa de ASVs por ano") +
-    theme(text=element_text(size = 14)) +
-    guides(col = guide_legend(nrow = 6)) +
-    theme(plot.title = element_text(hjust=0.5))
-}
+               )) +
+      scale_x_continuous(breaks = 0:2100) +
+      geom_tile() + 
+      labs(fill='Abundância \nrelativa (%)',
+           x = "Ano",
+           y = "Espécies") +
+      geom_hline(yintercept = c(10.5)) +
+      scale_fill_continuous(
+        trans = "log10", # exibir a abundancia em escala logaritmica para favorecer a exibicao de baixo RRA
+        breaks = c(0.001, 0.01, 0.1, 1, 10, 75), # definindo os valores que aparecem na escala
+        type = "viridis") +
+      ggtitle(label = "Espécies identificadas por ano") +
+      theme(text = element_text(size = 14)) +
+      guides(col = guide_legend(nrow = 6)) +
+      theme(plot.title = element_text(hjust = 0.5))
+    
+    ## Plotando
+    ggsave(plot = tile_ano_few, filename = "/home/gabriel/projetos/lagoa_ingleses/results/figuras/agosto/tile_plots/tile_ano_few.pdf",
+           device = "pdf", units = "cm", height = 25, width = 20, dpi = 600)
+    }
 
   ## Exibindo  por ano com todas ids
   {
-  all_ID_tbl %>% 
-    mutate(Expedition = factor(Expedition)) %>% #transformando variaveis categoricas em fatores com niveis
-    mutate(Sample = factor(Sample,
-                           levels = c("L1_nov21",
-                                      "L1_out21",
-                                      "L2_nov21",
-                                      "L2_out21",
-                                      "L3_nov21",
-                                      "L3_out21",
-                                      "L4_nov21",
-                                      "L4_out21",
-                                      "L1-neo-mi",
-                                      "L2 Dez/20",
-                                      "L2 Nov/20"
-                           ))) %>% 
-    mutate(Expedition = factor(Expedition,
-                               levels = c("Nov_Dec/20",
-                                          "Nov/20",
-                                          "Dec/20",
-                                          "out/21",
-                                          "Nov/21"
-                                          ))) %>%
-    mutate(Point = factor(Point)) %>%
-    mutate(File_name = factor(File_name)) %>%
-    mutate(Expedition = factor(Expedition)) %>%
-    # filter(!`Curated ID` %in% c("Astyanax", #retirando as ids a nivel de genero
-    #                           "Characidae",
-    #                           "Cichlidae",
-    #                           "Hoplias",
-    #                           "Pimelodus")) %>%
-    # filter(RRA >=0.01) %>% #retirando as ASVs "espurias", com abundancia menor que 0.01 ATUAL. Heron pediu para manter as reads com baixa abundancia
-    # filter(!is.na(`Curated ID`)) %>% #retirar os NA
-    ### Tile plot
-    ggplot(aes(y = `Curated ID`, 
-               x = Year,
-               fill = RRA,
-    )) +
-    scale_x_continuous(breaks = 0:2100) +
-    geom_tile() + 
-    labs(fill='Abundância \nrelativa (%)',
-         x = "Ano",
-         y = "Espécies") +
-    geom_hline(yintercept = c(11.5)) +
-    scale_fill_continuous(trans = "log10", type = "viridis") +
-    ggtitle(label = "Abundância relativa de ASVs por ano (todas ids)") +
-    theme(text=element_text(size = 14)) +
-    guides(col = guide_legend(nrow = 6)) +
-    theme(plot.title = element_text(hjust=0.5))
-}
+  tile_ano_all <- all_ID_tbl %>%
+      mutate(Expedition = factor(Expedition)) %>% #transformando variaveis categoricas em fatores com niveis
+      mutate(Sample = factor(Sample,
+                             levels = c("L1_nov21",
+                                        "L1_out21",
+                                        "L2_nov21",
+                                        "L2_out21",
+                                        "L3_nov21",
+                                        "L3_out21",
+                                        "L4_nov21",
+                                        "L4_out21",
+                                        "L1-neo-mi",
+                                        "L2 Dez/20",
+                                        "L2 Nov/20"
+                                        ))) %>%
+      mutate(Expedition = factor(Expedition,
+                                 levels = c("Nov_Dec/20",
+                                            "Nov/20",
+                                            "Dec/20",
+                                            "out/21",
+                                            "Nov/21"
+                                            ))) %>%
+      mutate(Point = factor(Point)) %>%
+      mutate(File_name = factor(File_name)) %>%
+      mutate(Expedition = factor(Expedition)) %>%
+      # filter(!`Curated ID` %in% c("Astyanax", #retirando as ids a nivel de genero
+      #                           "Characidae",
+      #                           "Cichlidae",
+      #                           "Hoplias",
+      #                           "Pimelodus")) %>%
+      # filter(RRA >=0.01) %>% #retirando as ASVs "espurias", com abundancia menor que 0.01 ATUAL. Heron pediu para manter as reads com baixa abundancia
+      # filter(!is.na(`Curated ID`)) %>% #retirar os NA
+      ### Tile plot
+      ggplot(aes(y = `Curated ID`,
+                 x = Year,
+                 fill = RRA,
+                 )) +
+      scale_x_continuous(breaks = 0:2100) +
+      geom_tile() +
+      labs(fill='Abundância \nrelativa (%)',
+           x = "Ano",
+           y = "Espécies") +
+      geom_hline(yintercept = c(11.5)) +
+      scale_fill_continuous(
+        trans = "log10", # exibir a abundancia em escala logaritmica para favorecer a exibicao de baixo RRA
+        breaks = c(0.001, 0.01, 0.1, 1, 10, 75), # definindo os valores que aparecem na escala
+        type = "viridis") +
+        ggtitle(label = "Espécies identificadas por ano (todas ids)") +
+        theme(text=element_text(size = 14)) +
+        guides(col = guide_legend(nrow = 6)) +
+        theme(plot.title = element_text(hjust=0.5))
+    
+    ## Plotando
+    ggsave(plot = tile_ano_all, filename = "/home/gabriel/projetos/lagoa_ingleses/results/figuras/agosto/tile_plots/tile_ano_all.pdf",
+           device = "pdf", units = "cm", height = 25, width = 20, dpi = 600)
+    }
+
 
 # Bar Plots Ponto/Mes ----
 
   ## Alfa diversidade Ponto/Mes
   {
-  alpha_tbl <- raw_results_tbl %>%
-    # filter(`Relative abundance on sample` >= 0.01) %>% # heron pediu para manter as ASVs espurias
-    filter(!`Curated ID` %in% c("Actinopteri", ## tirando as ASVs que nao foram identificadas a nivel de especie, nao-peixes e NA
-                                "Astyanax",
-                                "Characidae",
-                                "Characidium",
-                                "Characiformes",
-                                "Cichla",
-                                "Cichlidae",
-                                "Hoplias",
-                                "Pimelodus",
-                                "",
-                                "Cutibacterium acnes",
-                                "Bos taurus",
-                                "Canis familiaris",
-                                "Didelphis albiventris (Gamba)",
-                                "Homo sapiens",
-                                "Hydrochaeris hydrochaeris (Capivara)",
-                                "Nannopterum brasilianus",
-                                "Oryctolagus cuniculus (Coelho-bravo)",
-                                "Progne chalybea (Andorinha-grande)",
-                                "Sus scrofa")) %>%
-    mutate("Mês" = str_split_fixed(string = .$Sample, # criando uma nova coluna quebrando as infos da coluna Sample
-                                   pattern = "_",
-                                   n = 2)[,2]) %>%
-    mutate(Mês = factor(Mês, levels = c("out21", "nov21"))) %>%
-    filter(!Sample %in% c("LI1-neo-mi", 
-                          "L2_dez20")) %>% 
-    group_by(Sample, 
-             Read_origin,
-             Primer,
-             `Curated ID`,
-             Year,
-             Point,
-             Expedition,
-             Mês
-             ) %>% 
-    summarize(`Num ASVs` = length(unique(`ASV (Sequence)`)),
-              `Num OTUs` = length(unique(`OTU`)),
-              `ID Abundance on sample (%)` = sum(`Relative abundance on sample`),
-              `Ponto` = Point) %>% 
-    mutate(Sample = factor(Sample, levels = c("L1_out21",
-                                              "L1_nov21",
-                                              "L2_out21",
-                                              "L2_nov21",
-                                              "L3_out21",
-                                              "L3_nov21",
-                                              "L4_out21",
-                                              "L4_nov21"))) %>% 
-    ungroup() %>% 
-    unique()
-  
+    alpha_tbl <- raw_results_tbl %>%
+      # filter(`Relative abundance on sample` >= 0.01) %>% # heron pediu para manter as ASVs espurias
+      filter(!`Curated ID` %in% c("Actinopteri", ## tirando as ASVs que nao foram identificadas a nivel de especie, nao-peixes e NA
+                                  "Astyanax",
+                                  "Characidae",
+                                  "Characidium",
+                                  "Characiformes",
+                                  "Cichla",
+                                  "Cichlidae",
+                                  "Hoplias",
+                                  "Pimelodus",
+                                  "",
+                                  "Cutibacterium acnes",
+                                  "Bos taurus",
+                                  "Canis familiaris",
+                                  "Didelphis albiventris (Gamba)",
+                                  "Homo sapiens",
+                                  "Hydrochaeris hydrochaeris (Capivara)",
+                                  "Nannopterum brasilianus",
+                                  "Oryctolagus cuniculus (Coelho-bravo)",
+                                  "Progne chalybea (Andorinha-grande)",
+                                  "Sus scrofa"
+                                  )) %>%
+      mutate("Mês" = str_split_fixed(string = .$Sample, # criando uma nova coluna quebrando as infos da coluna Sample
+                                     pattern = "_",
+                                     n = 2)[,2]) %>%
+      mutate(Mês = factor(Mês, levels = c("out21", "nov21"))) %>%
+      filter(!Sample %in% c("LI1-neo-mi",
+                            "L2_dez20")) %>% 
+      group_by(Sample,
+               Read_origin,
+               Primer,
+               `Curated ID`,
+               Year,
+               Point,
+               Expedition,
+               Mês
+               ) %>%
+      summarize(`Num ASVs` = length(unique(`ASV (Sequence)`)),
+                `Num OTUs` = length(unique(`OTU`)),
+                `ID Abundance on sample (%)` = sum(`Relative abundance on sample`),
+                `Ponto` = Point) %>%
+      mutate(Sample = factor(Sample, levels = c("L1_out21",
+                                                "L1_nov21",
+                                                "L2_out21",
+                                                "L2_nov21",
+                                                "L3_out21",
+                                                "L3_nov21",
+                                                "L4_out21",
+                                                "L4_nov21"
+                                                ))) %>%
+      ungroup() %>%
+      unique()
+    }
+
   ## Facetar por ponto 
-  
-  print(alpha_plot_ponto <- alpha_tbl %>% 
-          mutate(`Curated ID` = factor(`Curated ID`)) %>% 
-          ggplot(aes(x = Sample,
-                     fill = Mês)) + ## preenchendo as cores por mes de coleta
-          geom_bar(stat = "count", position = "stack") +
-          guides(col = guide_legend(nrow = 6)) +
-          xlab("Amostra") +
-          ylab("Riqueza de espécies") +
-          ggtitle(label = "Riqueza de espécies por amostra") +
-          theme_bw(base_size = 16) +
-          theme(legend.position = "bottom") +
-          theme(axis.text.x = element_text(angle = 45,hjust = 1)) +
-          geom_text(stat='count', ## codigo que exibe dentro das barras a contagem
-                    aes(label=..count..),
-                    position = position_dodge(width = 0.9),
-                    vjust = 1.4,
-                    colour = "#ffffff", size = 6) +
-          facet_grid2(cols = vars(Point), ##facetando por ponto
-                      scales = "free_x",
-                      axes = "all",
-                      space = "free_x",
-                      independent ='x') +
-          scale_fill_manual(values = viridis::viridis(n=6)[c(2,5)])
-  )
-  
+  {
+    print(alpha_plot_ponto <- alpha_tbl %>% 
+            mutate(`Curated ID` = factor(`Curated ID`)) %>% 
+            ggplot(aes(x = Sample,
+                       fill = Mês)) + ## preenchendo as cores por mes de coleta
+            geom_bar(stat = "count", position = "stack") +
+            guides(col = guide_legend(nrow = 6)) +
+            xlab("Amostra") +
+            ylab("Riqueza de espécies") +
+            ggtitle(label = "Riqueza de espécies por amostra") +
+            theme_bw(base_size = 16) +
+            theme(legend.position = "bottom") +
+            theme(axis.text.x = element_text(angle = 45,hjust = 1)) +
+            geom_text(stat='count', ## codigo que exibe dentro das barras a contagem
+                      aes(label=..count..),
+                      position = position_dodge(width = 0.9),
+                      vjust = 1.4,
+                      colour = "#ffffff", size = 6) +
+            facet_grid2(cols = vars(Point), ##facetando por ponto
+                        scales = "free_x",
+                        axes = "all",
+                        space = "free_x",
+                        independent ='x') +
+            scale_fill_manual(values = viridis::viridis(n=6)[c(2,5)]))
+
+    ## Plotando
+    ggsave(plot = alpha_plot_ponto, filename = "/home/gabriel/projetos/lagoa_ingleses/results/figuras/agosto/barplots//alpha_plot_ponto.pdf",
+           device = "pdf", units = "cm", height = 15, width = 20, dpi = 600)
+              }
+
   ## Facetar por Mes 
-  
-  print(alpha_plot_mes <- alpha_tbl %>% 
-          mutate(`Curated ID` = factor(`Curated ID`)) %>% 
-          ggplot(aes(x = Sample,
-                     fill = Ponto)) + ## preenchendo as barras por mes de coleta
-          geom_bar(stat = "count", position = "stack") +
-          guides(col = guide_legend(nrow = 6)) +
-          xlab("Amostra") +
-          ylab("Riqueza de espécies") +
-          ggtitle(label = "Riqueza de espécies por amostra") +
-          theme_bw(base_size = 16) +
-          theme(legend.position = "bottom") +
-          theme(axis.text.x = element_text(angle = 45,hjust = 1)) +
-          geom_text(stat='count', ## codigo que exibe dentro das barras a contagem
-                    aes(label=..count..),
-                    position = position_dodge(width = 0.9),
-                    vjust = 1.4,
-                    colour = "#ffffff", size = 6) +
-          facet_grid2(cols = vars(Mês), ##facetando por mes
-                      scales = "free_x",
-                      axes = "all",
-                      space = "free_x",
-                      independent ='x') +
-          scale_fill_manual(values = viridis::viridis(n=10)[c(1,7,5,9)])
-  )
-  
-}
+  {
+    print(alpha_plot_mes <- alpha_tbl %>% 
+            mutate(`Curated ID` = factor(`Curated ID`)) %>% 
+            ggplot(aes(x = Sample,
+                       fill = Ponto)) + ## preenchendo as barras por mes de coleta
+            geom_bar(stat = "count", position = "stack") +
+            guides(col = guide_legend(nrow = 6)) +
+            xlab("Amostra") +
+            ylab("Riqueza de espécies") +
+            ggtitle(label = "Riqueza de espécies por amostra") +
+            theme_bw(base_size = 16) +
+            theme(legend.position = "bottom") +
+            theme(axis.text.x = element_text(angle = 45,hjust = 1)) +
+            geom_text(stat='count', ## codigo que exibe dentro das barras a contagem
+                      aes(label=..count..),
+                      position = position_dodge(width = 0.9),
+                      vjust = 1.4,
+                      colour = "#ffffff", size = 6) +
+            facet_grid2(cols = vars(Mês), ##facetando por mes
+                        scales = "free_x",
+                        axes = "all",
+                        space = "free_x",
+                        independent ='x') +
+            scale_fill_manual(values = viridis::viridis(n=10)[c(1,7,5,9)]))
+    
+    ## Plotando
+      ggsave(plot = alpha_plot_mes, filename = "/home/gabriel/projetos/lagoa_ingleses/results/figuras/agosto/barplots//alpha_plot_mes.pdf",
+             device = "pdf", units = "cm", height = 15, width = 20, dpi = 600)
+    }
+
 
 # Bar Plots Proporcao Especies/Ids ----
 
@@ -626,13 +672,15 @@ few_ID_tbl %>%
             guides(col = guide_legend(nrow = 6)) +
             xlab("Espécies") + ## alterar o nome do eixo x
             ylab("Proporção de ASVs %") + ## alterar o nome do eixo y
-            ggtitle(label = "Proporção de identificações \n associadas a peixes") + ## alterar o titulo do plot
-            
+            ggtitle(label = "Proporção de identificações associadas a peixes") + ## alterar o titulo do plot
             theme_bw(base_size = 16) +
             scale_fill_manual(values = viridis::viridis(n=4)[c(2,3)]) +
-            guides(fill = guide_legend("Tipo")) + ## alterar o titulo da legenda
-            theme(plot.title = element_text(hjust=0.5))
+            guides(fill = guide_legend("")) + ## alterar o titulo da legenda
+            theme(plot.title = element_text(hjust=0.3))
           )
+    ## Plotando
+    ggsave(plot = plot_peixe, filename = "/home/gabriel/projetos/lagoa_ingleses/results/figuras/agosto/barplots/plot_peixes.pdf",
+           device = "pdf", units = "cm", height = 15, width = 15, dpi = 600)
   }
   
   ### Proporcao de ids
@@ -659,7 +707,11 @@ few_ID_tbl %>%
           guides(fill = guide_legend("Nível")) + ## alterar o titulo da legenda
           theme(plot.title = element_text(hjust=0.5))
         )
+  ## Plotando
+  ggsave(plot = plot_ids, filename = "/home/gabriel/projetos/lagoa_ingleses/results/figuras/agosto/barplots/plot_ids.pdf",
+         device = "pdf", units = "cm", height = 15, width = 15, dpi = 600)
   }
+
 
 # NMDS Plots ----
 
@@ -1000,6 +1052,8 @@ few_ID_tbl %>%
   
   
 }
+
+
 
 
 
