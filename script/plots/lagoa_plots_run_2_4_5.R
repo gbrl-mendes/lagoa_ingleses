@@ -16,16 +16,15 @@ editor_options:
 ---
   
 # Carregando bibliotecas ----
+
 {
   library(dplyr)
   library(tidyr)
   library(tibble)
   library(stringr)
-  library(dplyr)
   library(ggplot2)
   library(ggforce)
   library(ggord)
-  library(sf)
   library(phyloseq)
   library(Biostrings)
   library(Matrix)
@@ -33,9 +32,11 @@ editor_options:
   library(DECIPHER)
   library(future)
   library(vegan)
+  library(ggvegan)
   library(base)
   library(factoextra)
-  }
+  library(ggh4x)
+}
 
 # Caminhos ----
 {
@@ -481,6 +482,7 @@ raw_results_tbl$`Curated ID`[raw_results_tbl$`Curated ID` %in% c("Oreochromis ni
     }
 
 
+
 # Bar Plots Ponto/Mes ----
 
   ## Alfa diversidade Ponto/Mes
@@ -543,7 +545,7 @@ raw_results_tbl$`Curated ID`[raw_results_tbl$`Curated ID` %in% c("Oreochromis ni
   ## Facetar por ponto 
   {
     print(alpha_plot_ponto <- alpha_tbl %>% 
-            mutate(`Curated ID` = factor(`Curated ID`)) %>% 
+            mutate(`Curated ID` = factor(`Curated ID`)) %>%
             ggplot(aes(x = Sample,
                        fill = Mês)) + ## preenchendo as cores por mes de coleta
             geom_bar(stat = "count", position = "stack") +
@@ -567,13 +569,13 @@ raw_results_tbl$`Curated ID`[raw_results_tbl$`Curated ID` %in% c("Oreochromis ni
             scale_fill_manual(values = viridis::viridis(n=6)[c(2,5)]))
 
     ## Plotando
-    ggsave(plot = alpha_plot_ponto, filename = "/home/gabriel/projetos/lagoa_ingleses/results/figuras/agosto/barplots//alpha_plot_ponto.pdf",
+    ggsave(plot = alpha_plot_ponto, filename = "/home/gabriel/projetos/lagoa_ingleses/results/figuras/agosto/barplots/alpha_plot_ponto.pdf",
            device = "pdf", units = "cm", height = 15, width = 20, dpi = 600)
               }
 
-  ## Facetar por Mes 
+  ## Facetar por Mes/ponto
   {
-    print(alpha_plot_mes <- alpha_tbl %>% 
+    print(alpha_plot_mes_ponto <- alpha_tbl %>% 
             mutate(`Curated ID` = factor(`Curated ID`)) %>% 
             ggplot(aes(x = Sample,
                        fill = Ponto)) + ## preenchendo as barras por mes de coleta
@@ -598,10 +600,30 @@ raw_results_tbl$`Curated ID`[raw_results_tbl$`Curated ID` %in% c("Oreochromis ni
             scale_fill_manual(values = viridis::viridis(n=10)[c(1,7,5,9)]))
     
     ## Plotando
-      ggsave(plot = alpha_plot_mes, filename = "/home/gabriel/projetos/lagoa_ingleses/results/figuras/agosto/barplots//alpha_plot_mes.pdf",
+      ggsave(plot = alpha_plot_mes_ponto, filename = "/home/gabriel/projetos/lagoa_ingleses/results/figuras/agosto/barplots/alpha_plot_mes_ponto.pdf",
              device = "pdf", units = "cm", height = 15, width = 20, dpi = 600)
-    }
+  }
 
+  ## Facetar por Mes
+
+{
+    print(alpha_plot_mes_join <- alpha_tbl %>% 
+            mutate(`Curated ID` = factor(`Curated ID`)) %>% 
+            ggplot(aes(x = Mês,
+                       fill = Ponto)) + ## preenchendo as barras por mes de coleta
+            geom_bar(stat = "count", position = "stack") +
+            guides(col = guide_legend(nrow = 6)) +
+            xlab("Mês") +
+            ylab("Riqueza de espécies") +
+            ggtitle(label = "Riqueza de espécies por mês") +
+            theme_bw(base_size = 16) +
+            # theme(legend.position = "bottom") +
+            geom_text(stat = 'count', aes(label = ..count..), position = position_stack(vjust = 0.5), size = 4))
+  
+  ## Plotando
+  ggsave(plot = alpha_plot_mes_join, filename = "/home/gabriel/projetos/lagoa_ingleses/results/figuras/agosto/barplots/alpha_plot_mes_join.pdf",
+         device = "pdf", units = "cm", height = 15, width = 14, dpi = 600)
+}
 
 # Bar Plots Proporcao Especies/Ids ----
 
@@ -711,6 +733,7 @@ raw_results_tbl$`Curated ID`[raw_results_tbl$`Curated ID` %in% c("Oreochromis ni
   ggsave(plot = plot_ids, filename = "/home/gabriel/projetos/lagoa_ingleses/results/figuras/agosto/barplots/plot_ids.pdf",
          device = "pdf", units = "cm", height = 15, width = 15, dpi = 600)
   }
+
 
 
 # NMDS Plots ----
