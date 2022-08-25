@@ -36,6 +36,7 @@ editor_options:
   library(base)
   library(factoextra)
   library(ggh4x)
+  library(adespatial)
 }
 
 # Caminhos ----
@@ -483,65 +484,63 @@ raw_results_tbl$`Curated ID`[raw_results_tbl$`Curated ID` %in% c("Oreochromis ni
 
 
 
-# Bar Plots Ponto/Mes ----
 
-  ## Alfa diversidade Ponto/Mes
-  {
-    alpha_tbl <- raw_results_tbl %>%
-      # filter(`Relative abundance on sample` >= 0.01) %>% # heron pediu para manter as ASVs espurias
-      filter(!`Curated ID` %in% c("Actinopteri", ## tirando as ASVs que nao foram identificadas a nivel de especie, nao-peixes e NA
-                                  "Astyanax",
-                                  "Characidae",
-                                  "Characidium",
-                                  "Characiformes",
-                                  "Cichla",
-                                  "Cichlidae",
-                                  "Hoplias",
-                                  "Pimelodus",
-                                  "",
-                                  "Cutibacterium acnes",
-                                  "Bos taurus",
-                                  "Canis familiaris",
-                                  "Didelphis albiventris (Gamba)",
-                                  "Homo sapiens",
-                                  "Hydrochaeris hydrochaeris (Capivara)",
-                                  "Nannopterum brasilianus",
-                                  "Oryctolagus cuniculus (Coelho-bravo)",
-                                  "Progne chalybea (Andorinha-grande)",
-                                  "Sus scrofa"
-                                  )) %>%
-      mutate("Mês" = str_split_fixed(string = .$Sample, # criando uma nova coluna quebrando as infos da coluna Sample
-                                     pattern = "_",
-                                     n = 2)[,2]) %>%
-      mutate(Mês = factor(Mês, levels = c("out21", "nov21"))) %>%
-      filter(!Sample %in% c("LI1-neo-mi",
-                            "L2_dez20")) %>% 
-      group_by(Sample,
-               Read_origin,
-               Primer,
-               `Curated ID`,
-               Year,
-               Point,
-               Expedition,
-               Mês
-               ) %>%
-      summarize(`Num ASVs` = length(unique(`ASV (Sequence)`)),
-                `Num OTUs` = length(unique(`OTU`)),
-                `ID Abundance on sample (%)` = sum(`Relative abundance on sample`),
-                `Ponto` = Point) %>%
-      mutate(Sample = factor(Sample, levels = c("L1_out21",
-                                                "L1_nov21",
-                                                "L2_out21",
-                                                "L2_nov21",
-                                                "L3_out21",
-                                                "L3_nov21",
-                                                "L4_out21",
-                                                "L4_nov21"
-                                                ))) %>%
-      ungroup() %>%
-      unique()
-    }
-
+## Alfa diversidade Ponto/Mes ----
+{
+  alpha_tbl <- raw_results_tbl %>%
+    # filter(`Relative abundance on sample` >= 0.01) %>% # heron pediu para manter as ASVs espurias
+    filter(!`Curated ID` %in% c("Actinopteri", ## tirando as ASVs que nao foram identificadas a nivel de especie, nao-peixes e NA
+                                "Astyanax",
+                                "Characidae",
+                                "Characidium",
+                                "Characiformes",
+                                "Cichla",
+                                "Cichlidae",
+                                "Hoplias",
+                                "Pimelodus",
+                                "",
+                                "Cutibacterium acnes",
+                                "Bos taurus",
+                                "Canis familiaris",
+                                "Didelphis albiventris (Gamba)",
+                                "Homo sapiens",
+                                "Hydrochaeris hydrochaeris (Capivara)",
+                                "Nannopterum brasilianus",
+                                "Oryctolagus cuniculus (Coelho-bravo)",
+                                "Progne chalybea (Andorinha-grande)",
+                                "Sus scrofa"
+    )) %>%
+    mutate("Mês" = str_split_fixed(string = .$Sample, # criando uma nova coluna quebrando as infos da coluna Sample
+                                   pattern = "_",
+                                   n = 2)[,2]) %>%
+    mutate(Mês = factor(Mês, levels = c("out21", "nov21"))) %>%
+    filter(!Sample %in% c("LI1-neo-mi",
+                          "L2_dez20")) %>% 
+    group_by(Sample,
+             Read_origin,
+             Primer,
+             `Curated ID`,
+             Year,
+             Point,
+             Expedition,
+             Mês
+    ) %>%
+    summarize(`Num ASVs` = length(unique(`ASV (Sequence)`)),
+              `Num OTUs` = length(unique(`OTU`)),
+              `ID Abundance on sample (%)` = sum(`Relative abundance on sample`),
+              `Ponto` = Point) %>%
+    mutate(Sample = factor(Sample, levels = c("L1_out21",
+                                              "L1_nov21",
+                                              "L2_out21",
+                                              "L2_nov21",
+                                              "L3_out21",
+                                              "L3_nov21",
+                                              "L4_out21",
+                                              "L4_nov21"
+    ))) %>%
+    ungroup() %>%
+    unique()
+  
   ## Facetar por ponto 
   {
     print(alpha_plot_ponto <- alpha_tbl %>% 
@@ -567,12 +566,12 @@ raw_results_tbl$`Curated ID`[raw_results_tbl$`Curated ID` %in% c("Oreochromis ni
                         space = "free_x",
                         independent ='x') +
             scale_fill_manual(values = viridis::viridis(n=6)[c(2,5)]))
-
+    
     ## Plotando
     ggsave(plot = alpha_plot_ponto, filename = "/home/gabriel/projetos/lagoa_ingleses/results/figuras/agosto/barplots/alpha_plot_ponto.pdf",
            device = "pdf", units = "cm", height = 15, width = 20, dpi = 600)
-              }
-
+    }
+  
   ## Facetar por Mes/ponto
   {
     print(alpha_plot_mes_ponto <- alpha_tbl %>% 
@@ -600,13 +599,12 @@ raw_results_tbl$`Curated ID`[raw_results_tbl$`Curated ID` %in% c("Oreochromis ni
             scale_fill_manual(values = viridis::viridis(n=10)[c(1,7,5,9)]))
     
     ## Plotando
-      ggsave(plot = alpha_plot_mes_ponto, filename = "/home/gabriel/projetos/lagoa_ingleses/results/figuras/agosto/barplots/alpha_plot_mes_ponto.pdf",
-             device = "pdf", units = "cm", height = 15, width = 20, dpi = 600)
+    ggsave(plot = alpha_plot_mes_ponto, filename = "/home/gabriel/projetos/lagoa_ingleses/results/figuras/agosto/barplots/alpha_plot_mes_ponto.pdf",
+           device = "pdf", units = "cm", height = 15, width = 20, dpi = 600)
   }
-
+  
   ## Facetar por Mes
-
-{
+  {
     print(alpha_plot_mes_join <- alpha_tbl %>% 
             mutate(`Curated ID` = factor(`Curated ID`)) %>% 
             ggplot(aes(x = Mês,
@@ -619,11 +617,94 @@ raw_results_tbl$`Curated ID`[raw_results_tbl$`Curated ID` %in% c("Oreochromis ni
             theme_bw(base_size = 16) +
             # theme(legend.position = "bottom") +
             geom_text(stat = 'count', aes(label = ..count..), position = position_stack(vjust = 0.5), size = 4))
+    
+    ## Plotando
+    ggsave(plot = alpha_plot_mes_join, filename = "/home/gabriel/projetos/lagoa_ingleses/results/figuras/agosto/barplots/alpha_plot_mes_join.pdf",
+           device = "pdf", units = "cm", height = 15, width = 14, dpi = 600)
+  }
   
-  ## Plotando
-  ggsave(plot = alpha_plot_mes_join, filename = "/home/gabriel/projetos/lagoa_ingleses/results/figuras/agosto/barplots/alpha_plot_mes_join.pdf",
-         device = "pdf", units = "cm", height = 15, width = 14, dpi = 600)
 }
+
+## Beta diversidade ----
+{
+  ### Tabela wider
+  {
+    beta_tbl <- raw_results_tbl %>%
+      filter(!`Curated ID` %in% c("Actinopteri", ## tirando as ASVs que nao foram identificadas a nivel de especie, nao-peixes e NA
+                                  "Astyanax",
+                                  "Characidae",
+                                  "Characidium",
+                                  "Characiformes",
+                                  "Cichla",
+                                  "Cichlidae",
+                                  "Hoplias",
+                                  "Pimelodus",
+                                  "",
+                                  "Cutibacterium acnes",
+                                  "Bos taurus",
+                                  "Canis familiaris",
+                                  "Didelphis albiventris (Gamba)",
+                                  "Homo sapiens",
+                                  "Hydrochaeris hydrochaeris (Capivara)",
+                                  "Nannopterum brasilianus",
+                                  "Oryctolagus cuniculus (Coelho-bravo)",
+                                  "Progne chalybea (Andorinha-grande)",
+                                  "Sus scrofa"
+      )) %>%
+      mutate("Mês" = str_split_fixed(string = .$Sample, # criando uma nova coluna quebrando as infos da coluna Sample
+                                     pattern = "_",
+                                     n = 2)[,2]
+      ) %>%
+      mutate(Mês = factor(Mês, levels = c("out21", "nov21"))
+      ) %>%
+      filter(!Sample %in% c("LI1-neo-mi",
+                            "L2_dez20")
+      ) %>% 
+      group_by(Sample,
+               `Curated ID`
+      ) %>%
+      summarize(`ID Abundance on sample (%)` = sum(`Relative abundance on sample`)
+      ) %>%
+      mutate(Sample = factor(Sample, levels = c("L1_out21",
+                                                "L1_nov21",
+                                                "L2_out21",
+                                                "L2_nov21",
+                                                "L3_out21",
+                                                "L3_nov21",
+                                                "L4_out21",
+                                                "L4_nov21"
+      ))) %>%
+      ungroup() %>%
+      unique()  %>% 
+      pivot_wider(names_from = `Curated ID`, 
+                  values_from = `ID Abundance on sample (%)`)
+    
+    beta_tbl <- as.data.frame(beta_tbl) ## transformando a tabela em um data frame
+    
+    row.names(beta_tbl) <- beta_tbl$Sample ## nomes das amostras como row names
+    
+    beta_tbl <- beta_tbl %>% select(-c(Sample)) ## retirando a coluna Samples
+    
+    beta_tbl[is.na(beta_tbl)] = 0 ## substituindo NA por 0
+  }
+  
+ 
+  ### Calculo dos componentes de Beta diversidade de Jaccard
+  {
+    bd_j <- beta.div.comp(beta_tbl, coef = "J", quant = T)
+    bd_j$part
+    bd_j$rich
+    
+   }
+  
+  ### Calculo dos componentes de Beta diversidade de Sorensen
+  {
+    bd_s <- beta.div.comp(beta_tbl, coef = "S", quant = T)
+    bd_s$part
+  }
+  
+  
+  }
 
 # Bar Plots Proporcao Especies/Ids ----
 
