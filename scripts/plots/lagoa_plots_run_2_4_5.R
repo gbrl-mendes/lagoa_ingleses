@@ -485,7 +485,7 @@ raw_results_tbl$`Curated ID`[raw_results_tbl$`Curated ID` %in% c("Oreochromis ni
 
 
 
-## Alfa diversidade Ponto/Mes ----
+# Alfa diversidade Ponto/Mes ----
 {
   alpha_tbl <- raw_results_tbl %>%
     # filter(`Relative abundance on sample` >= 0.01) %>% # heron pediu para manter as ASVs espurias
@@ -615,7 +615,6 @@ raw_results_tbl$`Curated ID`[raw_results_tbl$`Curated ID` %in% c("Oreochromis ni
             ylab("Riqueza de espécies") +
             ggtitle(label = "Riqueza de espécies por mês") +
             theme_bw(base_size = 16) +
-            # theme(legend.position = "bottom") +
             geom_text(stat = 'count', aes(label = ..count..), position = position_stack(vjust = 0.5), size = 4))
     
     ## Plotando
@@ -623,9 +622,32 @@ raw_results_tbl$`Curated ID`[raw_results_tbl$`Curated ID` %in% c("Oreochromis ni
            device = "pdf", units = "cm", height = 15, width = 14, dpi = 600)
   }
   
+  ## Ids por amostra
+  
+  {
+    print(alpha_plot_id_sample <- alpha_tbl %>% 
+      mutate(`Curated ID` = factor(`Curated ID`)) %>% 
+      ggplot(aes(x = Sample,
+                 y = `ID Abundance on sample (%)`,
+                 group = Sample,
+                 fill = `Curated ID`)) +
+        ggtitle(label = "Espécies por amostra") +
+        xlab("Amostra") +
+        ylab("Proporção %") +
+        guides(fill = guide_legend("Espécie")) + ## alterar o titulo da legenda
+        # theme(legend.position = "bottom") +
+        geom_bar(stat = "identity", position = "stack") +
+        scale_fill_discrete(viridis::turbo(n = 32)))
+    
+    
+    ## Plotando
+    ggsave(plot = alpha_plot_id_sample, filename = "/home/gabriel/projetos/lagoa_ingleses/results/figuras/agosto/barplots/alpha_plot_id_sample.pdf",
+           device = "pdf", units = "cm", height = 15, width = 14, dpi = 600)
+  }
+  
 }
 
-## Beta diversidade ----
+# Beta diversidade ----
 {
   ### Tabela wider
   {
@@ -708,6 +730,8 @@ raw_results_tbl$`Curated ID`[raw_results_tbl$`Curated ID` %in% c("Oreochromis ni
 
 # Bar Plots Proporcao Especies/Ids ----
 
+## Barplots com os resultados das proporcoes
+
 ## Utilizando a abundancia relativa nas amostras para calcular a proporcao de peixes
 {
   grouped_by_ID_especie_tbl <- raw_results_tbl %>%
@@ -753,9 +777,9 @@ raw_results_tbl$`Curated ID`[raw_results_tbl$`Curated ID` %in% c("Oreochromis ni
               `Proporcao` = sum(`ASVs` / 2730833 * 100) #proporcao calculada com o total de ASVs
     ) %>%
     ungroup()
-}   
+}
 
-## Barplots com os resultados das proporcoes
+## Proporcoes barplots
 {
   ### Proporcao de peixes
   {peixe <- c("Não-peixes", "Peixes")
