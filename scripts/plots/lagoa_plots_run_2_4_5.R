@@ -33,6 +33,7 @@ editor_options:
   library(future)
   library(vegan)
   library(ggvegan)
+  library(ggpubr)
   library(base)
   library(factoextra)
   library(ggh4x)
@@ -52,6 +53,119 @@ editor_options:
 raw_results_tbl <- read.csv(paste0(tbl_path,"/","run_2_4_5_lagoa_ingleses_v2.csv"), sep = ",", check.names = FALSE) %>% tibble()
 
 raw_results_tbl$`Curated ID`[raw_results_tbl$`Curated ID` %in% c("Oreochromis niloticus")] <- "Tilapia rendalli" # Oreochromis niloticus é Tilapia
+
+
+# Bar Plots Proporcao Especies/Ids ----
+
+## Barplots com os resultados das proporcoes
+
+## Utilizando a abundancia relativa nas amostras para calcular a proporcao de peixes
+{
+  grouped_by_ID_especie_tbl <- raw_results_tbl %>%
+    select(c(
+      "Sample",
+      "Expedition",
+      "Year",
+      "Sample.Name",
+      "File_name",
+      "Curated ID",
+      "Relative abundance to all samples",
+      "Relative abundance on sample",
+      "Point",
+      "Abundance",
+      "Sample total abundance"
+    )) %>% 
+    mutate("Peixe" = if_else (`Curated ID` %in% c("",
+                                                  "Cutibacterium acnes",
+                                                  "Bos taurus",
+                                                  "Canis familiaris",
+                                                  "Didelphis albiventris (Gamba)",
+                                                  "Homo sapiens",
+                                                  "Hydrochaeris hydrochaeris (Capivara)",
+                                                  "Nannopterum brasilianus",
+                                                  "Oryctolagus cuniculus (Coelho-bravo)",
+                                                  "Progne chalybea (Andorinha-grande)",
+                                                  "Sus scrofa"),"FALSE", "TRUE")) %>%
+    mutate("Especie" = if_else (`Curated ID` %in% c("Hoplias",
+                                                    "Cichla",
+                                                    "Actinopteri",
+                                                    "Characiformes",
+                                                    "Siluriformes",
+                                                    "Astyanax",
+                                                    "Characidium",
+                                                    "Cichlidae",
+                                                    "Characidae",
+                                                    "Pimelodus"), "FALSE", "TRUE")) %>% 
+    group_by(Peixe, Especie) %>% 
+    summarize("Peixe" = unique(Peixe), #identificacao se as ASVs sao de peixes ou nao-peixes
+              "Especie" = unique(Especie), #identificacao se as ASVs foram identificadas ao nivel de especie
+              # `RRA` = sum(`Relative abundance on sample`)/11, #proporcao calculada com a RRA
+              `ASVs` = sum(`Abundance`), #numero de ASVs
+              `Proporcao` = sum(`ASVs` / 2730833 * 100) #proporcao calculada com o total de ASVs
+    ) %>%
+    ungroup()
+}
+
+## Proporcoes barplots
+{
+  ### Proporcao de peixes
+  {peixe <- c("Não-peixes", "Peixes")
+  ASVs <- c(25130, (160274 + 2545429))
+  proporcao <- c(0.92, (5.87 + 93.21))
+  peixes <- data_frame(peixe, ASVs, proporcao)
+  }
+  ## Barplots da proporcao de peixes
+  {
+    print(plot_peixe <- peixes %>% 
+            ggplot(aes(x=peixe, y=proporcao, fill = peixe)) + 
+            geom_bar(stat = "identity") +
+            geom_text(aes(label = proporcao), ## colocar o valor da proporcao acima das barras
+                      position = position_dodge(width = 0.9),
+                      vjust = -0.1,
+                      colour = "black", size = 6) +
+            guides(col = guide_legend(nrow = 6)) +
+            xlab("Espécies") + ## alterar o nome do eixo x
+            ylab("Proporção de ASVs %") + ## alterar o nome do eixo y
+            ggtitle(label = "Proporção de identificações associadas a peixes") + ## alterar o titulo do plot
+            theme_bw(base_size = 16) +
+            scale_fill_manual(values = viridis::viridis(n=4)[c(2,3)]) +
+            guides(fill = guide_legend("")) + ## alterar o titulo da legenda
+            theme(plot.title = element_text(hjust=0.3))
+    )
+    ## Plotando
+    ggsave(plot = plot_peixe, filename = "/home/gabriel/projetos/lagoa_ingleses/results/figuras/agosto/barplots/plot_peixes.pdf",
+           device = "pdf", units = "cm", height = 15, width = 15, dpi = 600)
+  }
+  
+  ### Proporcao de ids
+  especie <- c("Espécie", "Outros")
+  e_ASVs <- c(2545429, 160274)
+  e_proporcao <- c(0.94, 0.06)
+  especies <- data_frame(especie, e_ASVs, e_proporcao)
+  
+  ## Barplots da proporcao de ids
+  
+  print(plot_ids <- especies %>% 
+          ggplot(aes(x = especie, y = e_proporcao, fill = especie)) + 
+          geom_bar(stat = "identity") +
+          geom_text(aes(label = e_proporcao), ## colocar o valor da proporcao acima das barras
+                    position = position_dodge(width = 0.9),
+                    vjust = -0.1,
+                    colour = "black", size = 6) +
+          guides(col = guide_legend(nrow = 6)) +
+          xlab("Nível taxonômico") + ## alterar o nome do eixo x
+          ylab("Proporção de ASVs %") + ## alterar o nome do eixo y
+          ggtitle(label = "Proporção de identificações e \n respectivos níveis taxonômicos") + ## alterar o titulo do plot
+          theme_bw(base_size = 16) +
+          scale_fill_manual(values = viridis::viridis(n=4)[c(2,3)]) +
+          guides(fill = guide_legend("Nível")) + ## alterar o titulo da legenda
+          theme(plot.title = element_text(hjust=0.5))
+  )
+  ## Plotando
+  ggsave(plot = plot_ids, filename = "/home/gabriel/projetos/lagoa_ingleses/results/figuras/agosto/barplots/plot_ids.pdf",
+         device = "pdf", units = "cm", height = 15, width = 15, dpi = 600)
+}
+
 
 
 # Tile Plots ----
@@ -642,7 +756,7 @@ raw_results_tbl$`Curated ID`[raw_results_tbl$`Curated ID` %in% c("Oreochromis ni
     
     ## Plotando
     ggsave(plot = alpha_plot_id_sample, filename = "/home/gabriel/projetos/lagoa_ingleses/results/figuras/agosto/barplots/alpha_plot_id_sample.pdf",
-           device = "pdf", units = "cm", height = 15, width = 14, dpi = 600)
+           device = "pdf", units = "cm", height = 15, width = 28, dpi = 600)
   }
   
 }
@@ -650,8 +764,12 @@ raw_results_tbl$`Curated ID`[raw_results_tbl$`Curated ID` %in% c("Oreochromis ni
 # Beta diversidade ----
 {
   ### Tabela wider
+  
+  # Essa tabela e uma matriz onde as linhas sao as amostras e as colunas sao as especies
+  # Cada valor representa a abundancia da especie na amostra. Essa matriz pode ser usada
+  # em diversas analises
   {
-    beta_tbl <- raw_results_tbl %>%
+    spp_sample_tbl <- raw_results_tbl %>%
       filter(!`Curated ID` %in% c("Actinopteri", ## tirando as ASVs que nao foram identificadas a nivel de especie, nao-peixes e NA
                                   "Astyanax",
                                   "Characidae",
@@ -701,19 +819,19 @@ raw_results_tbl$`Curated ID`[raw_results_tbl$`Curated ID` %in% c("Oreochromis ni
       pivot_wider(names_from = `Curated ID`, 
                   values_from = `ID Abundance on sample (%)`)
     
-    beta_tbl <- as.data.frame(beta_tbl) ## transformando a tabela em um data frame
+    spp_sample_tbl <- as.data.frame(spp_sample_tbl) ## transformando a tabela em um data frame
     
-    row.names(beta_tbl) <- beta_tbl$Sample ## nomes das amostras como row names
+    row.names(spp_sample_tbl) <- spp_sample_tbl$Sample ## nomes das amostras como row names
     
-    beta_tbl <- beta_tbl %>% select(-c(Sample)) ## retirando a coluna Samples
+    spp_sample_tbl <- spp_sample_tbl %>% select(-c(Sample)) ## retirando a coluna Samples
     
-    beta_tbl[is.na(beta_tbl)] = 0 ## substituindo NA por 0
+    spp_sample_tbl[is.na(spp_sample_tbl)] = 0 ## substituindo NA por 0
   }
   
  
   ### Calculo dos componentes de Beta diversidade de Jaccard
   {
-    bd_j <- beta.div.comp(beta_tbl, coef = "J", quant = T)
+    bd_j <- beta.div.comp(spp_sample_tbl, coef = "J", quant = T)
     bd_j$part
     bd_j$rich
     
@@ -721,129 +839,14 @@ raw_results_tbl$`Curated ID`[raw_results_tbl$`Curated ID` %in% c("Oreochromis ni
   
   ### Calculo dos componentes de Beta diversidade de Sorensen
   {
-    bd_s <- beta.div.comp(beta_tbl, coef = "S", quant = T)
+    bd_s <- beta.div.comp(spp_sample_tbl, coef = "S", quant = T)
     bd_s$part
-  }
-  
-  
-  }
-
-# Bar Plots Proporcao Especies/Ids ----
-
-## Barplots com os resultados das proporcoes
-
-## Utilizando a abundancia relativa nas amostras para calcular a proporcao de peixes
-{
-  grouped_by_ID_especie_tbl <- raw_results_tbl %>%
-    select(c(
-      "Sample",
-      "Expedition",
-      "Year",
-      "Sample.Name",
-      "File_name",
-      "Curated ID",
-      "Relative abundance to all samples",
-      "Relative abundance on sample",
-      "Point",
-      "Abundance",
-      "Sample total abundance"
-    )) %>% 
-    mutate("Peixe" = if_else (`Curated ID` %in% c("",
-                                                  "Cutibacterium acnes",
-                                                  "Bos taurus",
-                                                  "Canis familiaris",
-                                                  "Didelphis albiventris (Gamba)",
-                                                  "Homo sapiens",
-                                                  "Hydrochaeris hydrochaeris (Capivara)",
-                                                  "Nannopterum brasilianus",
-                                                  "Oryctolagus cuniculus (Coelho-bravo)",
-                                                  "Progne chalybea (Andorinha-grande)",
-                                                  "Sus scrofa"),"FALSE", "TRUE")) %>%
-    mutate("Especie" = if_else (`Curated ID` %in% c("Hoplias",
-                                                    "Cichla",
-                                                    "Actinopteri",
-                                                    "Characiformes",
-                                                    "Siluriformes",
-                                                    "Astyanax",
-                                                    "Characidium",
-                                                    "Cichlidae",
-                                                    "Characidae",
-                                                    "Pimelodus"), "FALSE", "TRUE")) %>% 
-    group_by(Peixe, Especie) %>% 
-    summarize("Peixe" = unique(Peixe), #identificacao se as ASVs sao de peixes ou nao-peixes
-              "Especie" = unique(Especie), #identificacao se as ASVs foram identificadas ao nivel de especie
-              # `RRA` = sum(`Relative abundance on sample`)/11, #proporcao calculada com a RRA
-              `ASVs` = sum(`Abundance`), #numero de ASVs
-              `Proporcao` = sum(`ASVs` / 2730833 * 100) #proporcao calculada com o total de ASVs
-    ) %>%
-    ungroup()
+    }
 }
-
-## Proporcoes barplots
-{
-  ### Proporcao de peixes
-  {peixe <- c("Não-peixes", "Peixes")
-  ASVs <- c(25130, (160274 + 2545429))
-  proporcao <- c(0.92, (5.87 + 93.21))
-  peixes <- data_frame(peixe, ASVs, proporcao)
-  }
-    ## Barplots da proporcao de peixes
-  {
-    print(plot_peixe <- peixes %>% 
-            ggplot(aes(x=peixe, y=proporcao, fill = peixe)) + 
-            geom_bar(stat = "identity") +
-            geom_text(aes(label = proporcao), ## colocar o valor da proporcao acima das barras
-                      position = position_dodge(width = 0.9),
-                      vjust = -0.1,
-                      colour = "black", size = 6) +
-            guides(col = guide_legend(nrow = 6)) +
-            xlab("Espécies") + ## alterar o nome do eixo x
-            ylab("Proporção de ASVs %") + ## alterar o nome do eixo y
-            ggtitle(label = "Proporção de identificações associadas a peixes") + ## alterar o titulo do plot
-            theme_bw(base_size = 16) +
-            scale_fill_manual(values = viridis::viridis(n=4)[c(2,3)]) +
-            guides(fill = guide_legend("")) + ## alterar o titulo da legenda
-            theme(plot.title = element_text(hjust=0.3))
-          )
-    ## Plotando
-    ggsave(plot = plot_peixe, filename = "/home/gabriel/projetos/lagoa_ingleses/results/figuras/agosto/barplots/plot_peixes.pdf",
-           device = "pdf", units = "cm", height = 15, width = 15, dpi = 600)
-  }
-  
-  ### Proporcao de ids
-  especie <- c("Espécie", "Outros")
-  e_ASVs <- c(2545429, 160274)
-  e_proporcao <- c(0.94, 0.06)
-  especies <- data_frame(especie, e_ASVs, e_proporcao)
-
-  ## Barplots da proporcao de ids
-  
-  print(plot_ids <- especies %>% 
-          ggplot(aes(x = especie, y = e_proporcao, fill = especie)) + 
-          geom_bar(stat = "identity") +
-          geom_text(aes(label = e_proporcao), ## colocar o valor da proporcao acima das barras
-                    position = position_dodge(width = 0.9),
-                    vjust = -0.1,
-                    colour = "black", size = 6) +
-          guides(col = guide_legend(nrow = 6)) +
-          xlab("Nível taxonômico") + ## alterar o nome do eixo x
-          ylab("Proporção de ASVs %") + ## alterar o nome do eixo y
-          ggtitle(label = "Proporção de identificações e \n respectivos níveis taxonômicos") + ## alterar o titulo do plot
-          theme_bw(base_size = 16) +
-          scale_fill_manual(values = viridis::viridis(n=4)[c(2,3)]) +
-          guides(fill = guide_legend("Nível")) + ## alterar o titulo da legenda
-          theme(plot.title = element_text(hjust=0.5))
-        )
-  ## Plotando
-  ggsave(plot = plot_ids, filename = "/home/gabriel/projetos/lagoa_ingleses/results/figuras/agosto/barplots/plot_ids.pdf",
-         device = "pdf", units = "cm", height = 15, width = 15, dpi = 600)
-  }
-
-
 
 # NMDS Plots ----
 
-# Criacao do NMDS
+# NMDS Versao Heron ----
 {
   # Obtencao dos dados
   {
@@ -1185,6 +1188,78 @@ raw_results_tbl$`Curated ID`[raw_results_tbl$`Curated ID` %in% c("Oreochromis ni
 
 
 
+
+# NMDS Versao Ecological Applications in R ----
+
+  # Esta e uma abordagem heuristica, nao estamos testando nenhuma hipotese ainda!
+  # O unico objetivo e tentar observar padroes em nossos dados!
+{
+  # Transformar os dados da comunidade na matriz spp_sample_tbl para entrar no NMDS
+  spp_sample_hel <- decostand(spp_sample_tbl, method = "hellinger")
+  # Criando o NMDS
+  nmds1 <- metaMDS(spp_sample_hel, autotransform = FALSE) # Esta dando uma Warning Message. 
+                                                          # stress is (nearly) zero: you may have insufficient data
+                                                          # Isso seria um problema?
+  # Plotando no vegan
+  nmds1_vplot <- ordiplot(nmds1, type = "t") # type = "t" permite ver o nome dos pontos e das especies
+  
+  # Plotando no ggvegan
+  nmds1_gvplot <- autoplot(nmds1) # ainda nao e um plot ideal. Os proximos passos vao deixar o plot mais publicavel
+  
+  # Plotando no ggplot
+  fort <- fortify(nmds1) # "fortificando" os dados para eles entrarem no ggplot
+  nmds1_ggplot <- ggplot() +
+    geom_point(data = subset(fort, Score == 'sites'), # criacao do scatterplot com os pontos (como visto acima)
+               mapping = aes(x = NMDS1,
+                             y = NMDS2),
+               colour = "black",
+               alpha = 0.5) +
+    geom_segment(data = subset(fort, Score == 'species'), # criacao dos vetores (setas)
+                 mapping = aes(x = 0,
+                               y = 0,
+                               xend = NMDS1,
+                               yend = NMDS2),
+                 arrow = arrow(length = unit(0.015, "npc"),
+                               type = "closed"),
+                 colour = "darkgrey",
+                 size = 0.8) +
+    geom_text(data = subset(fort, Score == 'species'), # colocando o nome dos pontos e especies 
+              mapping = aes(label = Label, x = NMDS1 * 1.1,
+                            y = NMDS2 * 1.1)) + # multiplicando as coordenadas para afastar os nomes do fim das setas
+    geom_abline(intercept = 0, slope =  0, linetype = "dashed", size = 0.8, colour = "gray") +
+    geom_vline(aes(xintercept = 0), linetype = "dashed", size = 0.8, colour = "gray") +
+    theme(panel.grid.major = element_blank(),
+          panel.grid.minor = element_blank(),
+          panel.background = element_blank(),
+          axis.line = element_line(colour = "black"))
+  
+  ## Plotando
+  ggsave(plot = nmds1_ggplot, filename = "/home/gabriel/projetos/lagoa_ingleses/results/figuras/agosto/NDMS/nmds1_ggplot.pdf",
+         device = "pdf", units = "cm", height = 15, width = 20, dpi = 600)
+  
+  # Plotando no ggord
+  nmds1_ggord <- ggord(nmds1,
+                       grp_in = sort(row.names(spp_sample_tbl)),
+                       vectyp = "dotted",
+                       parse = F,
+                       ellipse = F,
+                       size = 8,
+                       arrow = 1, 
+                       veccol = "dark grey",
+                       txt = 3,
+                       repel = T,
+                       veclsz = 0.75,
+                       ) +
+    annotate(geom = "text",
+             x = c(-1.25),
+             y = c(1),
+             label = c(paste0("Stress: ",
+                              format(round(nmds1$stress,4)))),
+  size = 5)
+   
+  ggsave(plot = nmds1_ggord, filename = "/home/gabriel/projetos/lagoa_ingleses/results/figuras/agosto/NDMS/nmds1_ggord.pdf",
+         device = "pdf", units = "cm", height = 15, width = 20, dpi = 600)
+  }
 # Mapa da Lagoa dos Ingleses e os respectivos pontos ----
   
   # Localizacao da Lagoa dos Ingleses: 
