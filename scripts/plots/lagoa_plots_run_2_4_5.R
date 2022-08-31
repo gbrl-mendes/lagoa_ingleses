@@ -16,28 +16,27 @@ editor_options:
 ---
   
 # Carregando bibliotecas ----
-
 {
-  library(dplyr)
-  library(tidyr)
-  library(tibble)
-  library(stringr)
-  library(ggplot2)
-  library(ggforce)
-  library(ggord)
-  library(phyloseq)
-  library(Biostrings)
-  library(Matrix)
-  library(ShortRead)
-  library(DECIPHER)
-  library(future)
-  library(vegan)
-  library(ggvegan)
-  library(ggpubr)
-  library(base)
-  library(factoextra)
-  library(ggh4x)
   library(adespatial)
+  library(base)
+  library(Biostrings)
+  library(DECIPHER)
+  library(factoextra)
+  library(future)
+  library(ggforce)
+  library(ggh4x)
+  library(ggord)
+  library(ggplot2)
+  library(ggpubr)
+  library(ggvegan)
+  library(Matrix)
+  library(phyloseq)
+  library(ShortRead)
+  library(stringr)
+  library(tibble)
+  library(tidyr)
+  library(vegan)
+  library(dplyr)
 }
 
 # Caminhos ----
@@ -50,10 +49,102 @@ editor_options:
 }
 
 # Obtencao dos dados ----
-raw_results_tbl <- read.csv(paste0(tbl_path,"/","run_2_4_5_lagoa_ingleses_v2.csv"), sep = ",", check.names = FALSE) %>% tibble()
+{
+  raw_results_tbl <- read.csv(paste0(tbl_path,"/","run_2_4_5_lagoa_ingleses_v2.csv"), sep = ",", check.names = FALSE) %>% tibble()
+  raw_results_tbl$`Curated ID`[raw_results_tbl$`Curated ID` %in% c("Oreochromis niloticus")] <- "Tilapia rendalli" # Oreochromis niloticus é Tilapia
+}
 
-raw_results_tbl$`Curated ID`[raw_results_tbl$`Curated ID` %in% c("Oreochromis niloticus")] <- "Tilapia rendalli" # Oreochromis niloticus é Tilapia
+# Tabela wider para NMDS, Beta Diversidade e PCA ----
 
+# Essa tabela e uma matriz onde as linhas sao as amostras e as colunas sao as especies
+# Cada valor representa a abundancia da especie na amostra. Essa matriz pode ser usada
+# em diversas analises
+
+# Para realizar as analises que envolvam apenas as abundancias das especies,
+# usar as colunas de 4 a 35 c[,4:35]
+{
+  spp_sample_tbl <- raw_results_tbl %>%
+    select(c(
+      "Sample",
+      # "Run",
+      # "Group",
+      "Expedition",
+      # "Coleta",
+      "Year",
+      #"Sample.Name",
+      #"File_name",
+      # "OTU",
+      # "Read_origin",
+      "Curated ID",
+      # "final ID",
+      # "Abundance",
+      # "Relative abundance to all samples",
+      "Relative abundance on sample",
+      # "Sample.total.abundance",
+      # "Type",
+        "Point")) %>%
+      filter(!`Curated ID` %in% c("Actinopteri", ## tirando as ASVs que nao foram identificadas a nivel de especie, nao-peixes e NA
+                                  "Astyanax",
+                                  "Characidae",
+                                  "Characidium",
+                                  "Characiformes",
+                                  "Cichla",
+                                  "Cichlidae",
+                                  "Hoplias",
+                                  "Pimelodus",
+                                  "",
+                                  "Cutibacterium acnes",
+                                  "Bos taurus",
+                                  "Canis familiaris",
+                                  "Didelphis albiventris (Gamba)",
+                                  "Homo sapiens",
+                                  "Hydrochaeris hydrochaeris (Capivara)",
+                                  "Nannopterum brasilianus",
+                                  "Oryctolagus cuniculus (Coelho-bravo)",
+                                  "Progne chalybea (Andorinha-grande)",
+                                  "Sus scrofa"
+      )) %>%
+      filter(!Sample %in% c("LI1-neo-mi",
+                            "L2_dez20")
+      ) %>% 
+      group_by(Sample,
+               Expedition,
+               Point,
+               Year,
+               `Curated ID`
+      ) %>%
+      summarize(`ID Abundance on sample (%)` = sum(`Relative abundance on sample`)
+      ) %>%
+      mutate(Sample = factor(Sample, levels = c("L1_out21",
+                                                "L1_nov21",
+                                                "L2_out21",
+                                                "L2_nov21",
+                                                "L3_out21",
+                                                "L3_nov21",
+                                                "L4_out21",
+                                                "L4_nov21"
+      ))) %>%
+      ungroup() %>%
+      unique()  %>% 
+      pivot_wider(names_from = `Curated ID`, 
+                  values_from = `ID Abundance on sample (%)`)
+  
+  ## incluindo a coluna de forma para fazer o plot
+  spp_sample_tbl <- spp_sample_tbl %>%  mutate("Shape" = if_else(Expedition %in% c("out/21"), 1, 2)) %>%
+    relocate("Shape") # passar a coluna para o começo
+  
+  ## transformando a tabela em um data frame
+  spp_sample_tbl <- as.data.frame(spp_sample_tbl) 
+  
+  ## nomes das amostras como row names
+  row.names(spp_sample_tbl) <- spp_sample_tbl$Sample 
+  
+  ## retirando a coluna Samples
+  spp_sample_tbl <- spp_sample_tbl %>% select(-c(Sample)) 
+  
+  ## substituindo NA por 0
+  spp_sample_tbl[is.na(spp_sample_tbl)] = 0 
+}
 
 # Bar Plots Proporcao Especies/Ids ----
 
@@ -763,502 +854,431 @@ raw_results_tbl$`Curated ID`[raw_results_tbl$`Curated ID` %in% c("Oreochromis ni
 
 # Beta diversidade ----
 {
-  ### Tabela wider
-  
-  # Essa tabela e uma matriz onde as linhas sao as amostras e as colunas sao as especies
-  # Cada valor representa a abundancia da especie na amostra. Essa matriz pode ser usada
-  # em diversas analises
+  ## Calculo dos componentes de Beta diversidade de Jaccard
   {
-    spp_sample_tbl <- raw_results_tbl %>%
-      filter(!`Curated ID` %in% c("Actinopteri", ## tirando as ASVs que nao foram identificadas a nivel de especie, nao-peixes e NA
-                                  "Astyanax",
-                                  "Characidae",
-                                  "Characidium",
-                                  "Characiformes",
-                                  "Cichla",
-                                  "Cichlidae",
-                                  "Hoplias",
-                                  "Pimelodus",
-                                  "",
-                                  "Cutibacterium acnes",
-                                  "Bos taurus",
-                                  "Canis familiaris",
-                                  "Didelphis albiventris (Gamba)",
-                                  "Homo sapiens",
-                                  "Hydrochaeris hydrochaeris (Capivara)",
-                                  "Nannopterum brasilianus",
-                                  "Oryctolagus cuniculus (Coelho-bravo)",
-                                  "Progne chalybea (Andorinha-grande)",
-                                  "Sus scrofa"
-      )) %>%
-      mutate("Mês" = str_split_fixed(string = .$Sample, # criando uma nova coluna quebrando as infos da coluna Sample
-                                     pattern = "_",
-                                     n = 2)[,2]
-      ) %>%
-      mutate(Mês = factor(Mês, levels = c("out21", "nov21"))
-      ) %>%
-      filter(!Sample %in% c("LI1-neo-mi",
-                            "L2_dez20")
-      ) %>% 
-      group_by(Sample,
-               `Curated ID`
-      ) %>%
-      summarize(`ID Abundance on sample (%)` = sum(`Relative abundance on sample`)
-      ) %>%
-      mutate(Sample = factor(Sample, levels = c("L1_out21",
-                                                "L1_nov21",
-                                                "L2_out21",
-                                                "L2_nov21",
-                                                "L3_out21",
-                                                "L3_nov21",
-                                                "L4_out21",
-                                                "L4_nov21"
-      ))) %>%
-      ungroup() %>%
-      unique()  %>% 
-      pivot_wider(names_from = `Curated ID`, 
-                  values_from = `ID Abundance on sample (%)`)
-    
-    spp_sample_tbl <- as.data.frame(spp_sample_tbl) ## transformando a tabela em um data frame
-    
-    row.names(spp_sample_tbl) <- spp_sample_tbl$Sample ## nomes das amostras como row names
-    
-    spp_sample_tbl <- spp_sample_tbl %>% select(-c(Sample)) ## retirando a coluna Samples
-    
-    spp_sample_tbl[is.na(spp_sample_tbl)] = 0 ## substituindo NA por 0
-  }
-  
- 
-  ### Calculo dos componentes de Beta diversidade de Jaccard
-  {
-    bd_j <- beta.div.comp(spp_sample_tbl, coef = "J", quant = T)
+    bd_j <- beta.div.comp(spp_sample_tbl[,c(4:35)], coef = "J", quant = T)
     bd_j$part
     bd_j$rich
     
    }
   
-  ### Calculo dos componentes de Beta diversidade de Sorensen
+  ## Calculo dos componentes de Beta diversidade de Sorensen
   {
-    bd_s <- beta.div.comp(spp_sample_tbl, coef = "S", quant = T)
+    bd_s <- beta.div.comp(spp_sample_tbl[,c(4:35)], coef = "S", quant = T)
     bd_s$part
     }
 }
 
 # NMDS Plots ----
-
-# NMDS Versao Heron ----
 {
-  # Obtencao dos dados
+  # NMDS Versao Heron ----
+  
+  # Criacao da tabela
   {
-    raw_results_NMDS <- read.csv(file = paste0(tbl_path,"/", "run_2_4_5_lagoa_ingleses_v2.csv"), sep = ",",
-                                 header = TRUE,
-                                 check.names = FALSE,
-                                 na.strings=c("NA","NaN", "")) %>% 
-      as_tibble()
+    # Obtencao dos dados
+    {
+      raw_results_NMDS <- read.csv(file = paste0(tbl_path,"/", "run_2_4_5_lagoa_ingleses_v2.csv"), sep = ",",
+                                   header = TRUE,
+                                   check.names = FALSE,
+                                   na.strings=c("NA","NaN", "")) %>% 
+        as_tibble()
+    }
+    
+    # Criacao da lista com os possiveis nomes atribuidos as ASVs
+    {
+      raw_results_NMDS %>% colnames()
+      raw_results_NMDS %>% colnames() %>% paste0(collapse = '",\n"') %>% cat()
+    }
+    
+    # Agrupamento da ASVs que possuem os mesmos atributos abaixo
+    {
+      grouped_by_ID_NMDS <- raw_results_NMDS %>%
+        select(c(
+          "Sample",
+          # "Run",
+          # "Group",
+          "Expedition",
+          # "Coleta",
+          "Year",
+          "Sample.Name",
+          "File_name",
+          # "OTU",
+          # "Read_origin",
+          "Curated ID",
+          # "final ID",
+          # "Abundance",
+          # "Relative abundance to all samples",
+          "Relative abundance on sample",
+          # "Sample.total.abundance",
+          # "Type",
+          "Point", # "Sub.point", # "Depth", # "Num.replicates", # "Obs", # "Primer", # "Quantidade.de.ovos.ou.larvas", 
+          # "Kingdom", # "Phylum", # "Class", # "Order", # "Family", # "Genus", # "Species", # "Specimen", # "Basin", 
+          # "exact.Genus", # "exact.Species", # "exact.GenSp", # "X1_subject.header", # "X1_subject", # "X1_indentity", 
+          # "X1_length", # "X1_mismatches", # "X1_gaps", # "X1_query.start", # "X1_query.end", # "X1_subject.start", 
+          # "X1_subject.end", # "X1_e.value", # "X1_bitscore", # "X1_qcovhsp", # "X2_subject.header", # "X2_subject", 
+          # "X2_indentity", # "X2_length", # "X2_mismatches", # "X2_gaps", # "X2_query.start", # "X2_query.end", 
+          # "X2_subject.start", # "X2_subject.end", # "X2_e.value", # "X2_bitscore", # "X2_qcovhsp", # "X3_subject.header", 
+          # "X3_subject", # "X3_indentity", # "X3_length", # "X3_mismatches", # "X3_gaps", # "X3_query.start", 
+          # "X3_query.end", # "X3_subject.start", # "X3_subject.end", # "X3_e.value", # "X3_bitscore", # "X3_qcovhsp", 
+          # "Tag.pairs", # "Tag.FWD", # "Tag.REV", # "Control", # "Size..pb.", # "ASV.header", # "ASV..Sequence.", 
+          # "Remove", # "Probable.bacteria", # "Abd..higher.than.in.control"
+        )) %>% 
+        group_by(Sample, `Curated ID`,  Expedition, Point, Sample.Name, File_name) %>% 
+        summarize(`Sample` = unique(Sample),
+                  `Curated ID` = unique(`Curated ID`),
+                  `Expedition` = unique(Expedition),
+                  `Year` = unique(Year),
+                  `Point` = unique(Point),
+                  `Sample.Name` = unique(Sample.Name),
+                  `File_name` = unique(File_name),
+                  `RRA` = sum(`Relative abundance on sample`)) %>%
+        ungroup()
+    }
+    
+    # Organizar as especies
+    {
+      grouped_by_ID_NMDS$Sample %>% unique() %>% sort() %>%  paste0(collapse = '",\n"') %>% cat() ## valores possiveis de Amostra
+      grouped_by_ID_NMDS$Expedition %>% unique() %>% sort() %>%  paste0(collapse = '",\n"') %>% cat() ## valores possiveis de Coleta
+      grouped_by_ID_NMDS$Year %>% unique() %>% sort() %>%  paste0(collapse = '",\n"') %>% cat() ## valores possiveis de Ano
+      grouped_by_ID_NMDS$Point %>% unique() %>% sort() %>%  paste0(collapse = '",\n"') %>% cat() ## valores possiveis de ponto
+    }
+    
+    # Organizar as ordem das especies usando fatores
+    # Sem os seguintes grupos
+    {
+      grouped_by_ID_NMDS_fil <- grouped_by_ID_NMDS %>%
+        mutate(`Curated ID` = factor(`Curated ID`,
+                                     levels = rev(c(
+                                       #"Actinopteri",
+                                       "Acinocheirodon melanogramma",
+                                       #"Astyanax",
+                                       "Astyanax fasciatus",
+                                       "Astyanax lacustris",
+                                       "Brycon orthotaenia",
+                                       "Bryconamericus stramineus",
+                                       #"Characidae",
+                                       #"Characidium",
+                                       #"Characiformes",
+                                       #"Cichla",
+                                       #"Cichlidae",
+                                       "Colossoma macropomum",
+                                       "Coptodon zillii",
+                                       "Eigenmannia virescens",
+                                       "Gymnotus carapo",
+                                       "Hemigrammus gracilis",
+                                       "Hemigrammus marginatus",
+                                       #"Hoplias",
+                                       "Hoplias intermedius",
+                                       "Hoplias malabaricus",
+                                       "Hypomasticus steindachneri",
+                                       "Leporellus vittatus",
+                                       "Leporinus piau",
+                                       "Leporinus reinhardti",
+                                       "Leporinus taeniatus",
+                                       "Megaleporinus elongatus",
+                                       "Megaleporinus garmani",
+                                       "Moenkhausia costae",
+                                       "Myleus micans",
+                                       "Oreochromis niloticus",
+                                       "Orthospinus franciscensis",
+                                       #"Pimelodus",
+                                       "Pimelodus fur",
+                                       "Pimelodus maculatus",
+                                       "Pimelodus pohli",
+                                       "Planaltina myersi",
+                                       "Poecilia reticulata",
+                                       "Prochilodus costatus",
+                                       "Pseudoplatystoma corruscans",
+                                       "Pygocentrus piraya",
+                                       "Rhamdia quelen",
+                                       "Salmo salar",
+                                       "Serrasalmus brandtii",
+                                       "Tilapia rendalli",
+                                       "Wertheimeria maculata"
+                                       # ,
+                                       ## nao-peixes
+                                       #"NA",
+                                       # "Cavia magna",
+                                       #"Cutibacterium acnes",
+                                       # "Bos taurus",
+                                       # "Canis familiaris",
+                                       # "Didelphis albiventris (Gamba)",
+                                       # "Homo sapiens",
+                                       # "Hydrochaeris hydrochaeris (Capivara)",
+                                       # "Nannopterum brasilianus",
+                                       # "Oryctolagus cuniculus (Coelho-bravo)",
+                                       # "Progne chalybea (Andorinha-grande)",
+                                       # "Sus scrofa"
+                                     ))))
+    }
+    
+    # Fatorizar as variaveis para melhor plotagem
+    {
+      fact_NMDS <- grouped_by_ID_NMDS_fil %>%
+        mutate(Sample = factor(Sample, levels = c("L1_nov21",
+                                                  "L1_out21",
+                                                  # "L2_dez20",
+                                                  "L2_nov21",
+                                                  "L2_out21",
+                                                  "L3_nov21",
+                                                  "L3_out21",
+                                                  "L4_nov21",
+                                                  "L4_out21"
+                                                  # ,"LI1-neo-mi"
+        )), 
+        Expedition = factor(Expedition, levels = c("Dec/20",
+                                                   "Nov_Dec/20",
+                                                   "Nov/20",
+                                                   "Nov/21",
+                                                   "out/21")), 
+        Year = factor(Year, levels = c("2020",
+                                       "2021")),
+        Point = factor(Point, levels = c("L1",
+                                         "L2",
+                                         "L3",
+                                         "L4")))
+    }  
   }
   
-  # Criacao da lista com os possiveis nomes atribuidos as ASVs
+  # Criacao do plot NMDS
   {
-    raw_results_NMDS %>% colnames()
-    raw_results_NMDS %>% colnames() %>% paste0(collapse = '",\n"') %>% cat()
+    fact_NMDS$Sample %>% unique()
+    fact_NMDS %>% colnames()
+    
+  }
+  # 1- Preparar os dados para entrar no vegan
+  {
+    fact_NMDS_tbl <- fact_NMDS %>% 
+      select(c(Sample, Point, `Curated ID`, Expedition, Year, RRA )) %>%
+      group_by(Sample,`Curated ID`, Expedition, Year, Point) %>%
+      summarise(RRA = sum(RRA)) %>%
+      pivot_wider(c(Sample, Expedition, Year, Point), names_from = `Curated ID` ,values_from = RRA) %>%
+      mutate_if(is.numeric, ~replace(., is.na(.), 0))
+    # %>%
+    #   mutate("Sample number" = 0)  %>% 
+    #   ungroup() %>%
+    #   select(`Sample number`, 1:(ncol(.)-1))
+    
+    # Row names como Sample Names
+    row.names(fact_NMDS_tbl) <- fact_NMDS_tbl$Sample 
+    fact_NMDS_tbl$Sample <- NULL # apagando a coluna Sample
+    
+    
+    # Incluindo a coluna de forma para fazer o plot
+    
+    fact_NMDS_tbl <- fact_NMDS_tbl %>%  mutate("form" = if_else(Expedition %in% c(2021), 1, 2)) %>%
+      relocate("form") # passar a coluna para o começo
+  }
+  #2- Associar um numero a cada amostra
+  {
+    # Etapa necessaria para os dados entrarem no pacote vegan
+    for (sample in 1:nrow(fact_NMDS_tbl)) {
+      fact_NMDS_tbl$`Sample number`[sample] <- sample
+    }
+    
+    colnames(fact_NMDS_tbl)
+    hist(colSums(fact_NMDS_tbl[,c(7:53)]))
+    hist(rowSums(fact_NMDS_tbl[,c(7:53)]))
+    fact_NMDS_tbl[,c(7:53)]
+    
+    fact_NMDS_tbl %>% select(Sample, `Sample number`) %>% unique()
+    
   }
   
-  # Agrupamento da ASVs que possuem os mesmos atributos abaixo
+  #3- name rows como Sample numbers e remover coluna
   {
-    grouped_by_ID_NMDS <- raw_results_NMDS %>%
-      select(c(
-        "Sample",
-        # "Run",
-        # "Group",
-        "Expedition",
-        # "Coleta",
-        "Year",
-        "Sample.Name",
-        "File_name",
-        # "OTU",
-        # "Read_origin",
-        "Curated ID",
-        # "final ID",
-        # "Abundance",
-        # "Relative abundance to all samples",
-        "Relative abundance on sample",
-        # "Sample.total.abundance",
-        # "Type",
-        "Point", # "Sub.point", # "Depth", # "Num.replicates", # "Obs", # "Primer", # "Quantidade.de.ovos.ou.larvas", 
-        # "Kingdom", # "Phylum", # "Class", # "Order", # "Family", # "Genus", # "Species", # "Specimen", # "Basin", 
-        # "exact.Genus", # "exact.Species", # "exact.GenSp", # "X1_subject.header", # "X1_subject", # "X1_indentity", 
-        # "X1_length", # "X1_mismatches", # "X1_gaps", # "X1_query.start", # "X1_query.end", # "X1_subject.start", 
-        # "X1_subject.end", # "X1_e.value", # "X1_bitscore", # "X1_qcovhsp", # "X2_subject.header", # "X2_subject", 
-        # "X2_indentity", # "X2_length", # "X2_mismatches", # "X2_gaps", # "X2_query.start", # "X2_query.end", 
-        # "X2_subject.start", # "X2_subject.end", # "X2_e.value", # "X2_bitscore", # "X2_qcovhsp", # "X3_subject.header", 
-        # "X3_subject", # "X3_indentity", # "X3_length", # "X3_mismatches", # "X3_gaps", # "X3_query.start", 
-        # "X3_query.end", # "X3_subject.start", # "X3_subject.end", # "X3_e.value", # "X3_bitscore", # "X3_qcovhsp", 
-        # "Tag.pairs", # "Tag.FWD", # "Tag.REV", # "Control", # "Size..pb.", # "ASV.header", # "ASV..Sequence.", 
-        # "Remove", # "Probable.bacteria", # "Abd..higher.than.in.control"
-      )) %>% 
-      group_by(Sample, `Curated ID`,  Expedition, Point, Sample.Name, File_name) %>% 
-      summarize(`Sample` = unique(Sample),
-                `Curated ID` = unique(`Curated ID`),
-                `Expedition` = unique(Expedition),
-                `Year` = unique(Year),
-                `Point` = unique(Point),
-                `Sample.Name` = unique(Sample.Name),
-                `File_name` = unique(File_name),
-                `RRA` = sum(`Relative abundance on sample`)) %>%
-      ungroup()
+    # row.names(fact_NMDS_tbl) <- fact_NMDS_tbl$`Sample number` ## row.names como sample numbers
+    # 
+    # fact_NMDS_tbl <- fact_NMDS_tbl %>% ## remover a coluna Sample numbers
+    #   select(-c(`Sample number`))
+    
+    # Substituir o espaco no nome das especies por _
+    colnames(fact_NMDS_tbl)[7:53] <- colnames(fact_NMDS_tbl)[7:53] %>%  
+      str_replace_all(pattern = " ",replacement = "_") 
   }
   
-  # Organizar as especies
+  #5- Detrended Correspondence Analysis Plot 
   {
-    grouped_by_ID_NMDS$Sample %>% unique() %>% sort() %>%  paste0(collapse = '",\n"') %>% cat() ## valores possiveis de Amostra
-    grouped_by_ID_NMDS$Expedition %>% unique() %>% sort() %>%  paste0(collapse = '",\n"') %>% cat() ## valores possiveis de Coleta
-    grouped_by_ID_NMDS$Year %>% unique() %>% sort() %>%  paste0(collapse = '",\n"') %>% cat() ## valores possiveis de Ano
-    grouped_by_ID_NMDS$Point %>% unique() %>% sort() %>%  paste0(collapse = '",\n"') %>% cat() ## valores possiveis de ponto
+    
+    ## Técnica de estatística Multivariada que permite clusterizar grupos de variaveis
+    ## em conjuntos de dados muito grandes e com gradiente, permitindo observar tendencias
+    
+  }
+  ## tentar deixar esse plot mais visivel
+  {
+    fact_NMDS_ps_ord <- decorana(veg = fact_NMDS_tbl[,6:52])
+    fact_NMDS_ps_ord %>% summary()
+    fact_NMDS_ps_ord %>% str()
+    fact_NMDS_ps_ord$cproj
+    
+    plot(fact_NMDS_ps_ord)
+    plot(fact_NMDS_ps_ord,type = "p")
+    plot(fact_NMDS_ps_ord,type = "c") 
+    
+    points(fact_NMDS_ps_ord, display = "sites", cex = 0.8, pch=21, col="red", bg="yellow")
+    text(fact_NMDS_ps_ord, display = "sites", cex=0.7, col="blue")
+    text(fact_NMDS_ps_ord, display = "spec", cex=0.7, col="blue")
   }
   
-  # Organizar as ordem das especies usando fatores
-  
-  # Sem os seguintes grupos
+  #6- NMDS analisys 
   {
-    grouped_by_ID_NMDS <- grouped_by_ID_NMDS %>%
-      mutate(`Curated ID` = factor(`Curated ID`,
-                                   levels = rev(c(
-                                     #"Actinopteri",
-                                     "Acinocheirodon melanogramma",
-                                     #"Astyanax",
-                                     "Astyanax fasciatus",
-                                     "Astyanax lacustris",
-                                     "Brycon orthotaenia",
-                                     "Bryconamericus stramineus",
-                                     #"Characidae",
-                                     #"Characidium",
-                                     #"Characiformes",
-                                     #"Cichla",
-                                     #"Cichlidae",
-                                     "Colossoma macropomum",
-                                     "Coptodon zillii",
-                                     "Eigenmannia virescens",
-                                     "Gymnotus carapo",
-                                     "Hemigrammus gracilis",
-                                     "Hemigrammus marginatus",
-                                     #"Hoplias",
-                                     "Hoplias intermedius",
-                                     "Hoplias malabaricus",
-                                     "Hypomasticus steindachneri",
-                                     "Leporellus vittatus",
-                                     "Leporinus piau",
-                                     "Leporinus reinhardti",
-                                     "Leporinus taeniatus",
-                                     "Megaleporinus elongatus",
-                                     "Megaleporinus garmani",
-                                     "Moenkhausia costae",
-                                     "Myleus micans",
-                                     "Oreochromis niloticus",
-                                     "Orthospinus franciscensis",
-                                     #"Pimelodus",
-                                     "Pimelodus fur",
-                                     "Pimelodus maculatus",
-                                     "Pimelodus pohli",
-                                     "Planaltina myersi",
-                                     "Poecilia reticulata",
-                                     "Prochilodus costatus",
-                                     "Pseudoplatystoma corruscans",
-                                     "Pygocentrus piraya",
-                                     "Rhamdia quelen",
-                                     "Salmo salar",
-                                     "Serrasalmus brandtii",
-                                     "Tilapia rendalli",
-                                     "Wertheimeria maculata",
-                                     #nao-peixes
-                                     #"NA"
-                                     "Cavia magna",
-                                     #"Cutibacterium acnes",
-                                     "Bos taurus",
-                                     "Canis familiaris",
-                                     "Didelphis albiventris (Gamba)",
-                                     "Homo sapiens",
-                                     "Hydrochaeris hydrochaeris (Capivara)",
-                                     "Nannopterum brasilianus",
-                                     "Oryctolagus cuniculus (Coelho-bravo)",
-                                     "Progne chalybea (Andorinha-grande)",
-                                     "Sus scrofa"
-                                   ))))
+    
+    #6a- Calculate distances
+    
+    fact_NMDS_ps_vegan_ord_meta <- metaMDS(veg = fact_NMDS_tbl[,7:53], comm = fact_NMDS_tbl[,7:53])
+    # actually autotransform = FALSE doesn't seem to change the results
+    plot(fact_NMDS_ps_vegan_ord_meta, type = "t")
+    fact_NMDS_ps_vegan_ord_meta %>% str()
+    fact_NMDS_ps_vegan_ord_meta
+    plot(all_ps_vegan_ord_meta, type = "t")
+    plot(all_ps_vegan_ord_meta, type = "p")
+    
+    fact_NMDS_ps_vegan_ord_meta$stress
+    
+    # nmds_PLOT_ord <- 
+    ggord(fact_NMDS_ps_vegan_ord_meta, 
+          grp_in = fact_NMDS_tbl$Point, 
+          ellipse = F,
+          size = 10,
+          arrow = 0.5, veccol = "dark grey",
+          txt = 3,
+          repel = T,
+          max.overlaps = 55
+          # ,
+          # # facet=T,
+          # cols = viridis::viridis(option = "turbo",n = nrow(all_IDs_NMDS_df), alpha = 1)
+    )+
+      annotate(geom = "text",
+               x=c(0.2),
+               y=c(0.20),
+               label=c(paste0("Stress: ",format(round(fact_NMDS_ps_vegan_ord_meta$stress,4)))),
+               size=5) 
+    # +
+    # scale_shape_manual(name = "Year",
+    #                    values = fact_NMDS_tbl$form) 
+    # +
+    # scale_fill_manual(name = "Expedition",
+    #                   values = Exp_point_colors)
+    # +
+    # scale_color_manual(name = "Expedition2",
+    #                    values = Exp_point_colors)
+    
+    
+    ### Tirar as especies com ids muito genericas e fazer esse grafico apenas
+    ### para 2021 separando os clusters por pontos coletados (L1, L2, L3 e L4)
+    
+    
+    nmds_PLOT <- all_vegan_meta_tbl %>% 
+      # filter(Run %in% c("LGC_MiniSeq_1", "LGC_MiniSeq_2")) %>% 
+      ggplot(aes(x = NMDS1,y = NMDS2, col = Sample,
+                 shape = Year,
+                 label = Sample,
+                 Group = Year))+
+      geom_point(size = 11)+
+      theme_linedraw(base_size = 18) +
+      theme(legend.position="bottom") +
+      coord_fixed(ratio = 1) +
+      scale_color_manual(values = viridis::viridis(option = "turbo",n = 30, alpha = 1, begin = 0, end = 1, direction = 1)
+      ) +
+      annotate(geom = "text",
+               x=c(0.30),y=c(-0.3),label=c(paste0("Stress: ",fact_NMDS_ps_vegan_ord_meta$stress)),size=5)  
+    
+    nmds_PLOT
+    
+    
+    ggsave(file = paste0(figs_path,"/",prjct_radical,"_NMDS.pdf"),
+           plot = nmds_PLOT,
+           device = "png",
+           width = 31,
+           height =20,
+           units = "cm",
+           dpi = 300)
   }
   
-  # Fatorizar as variaveis para melhor plotagem
-  
-  {
-    fact_NMDS <- grouped_by_ID_NMDS %>%
-      mutate(Sample = factor(Sample, levels = c("L1_nov21",
-                                                "L1_out21",
-                                                "L2_dez20",
-                                                "L2_nov21",
-                                                "L2_out21",
-                                                "L3_nov21",
-                                                "L3_out21",
-                                                "L4_nov21",
-                                                "L4_out21",
-                                                "LI1-neo-mi")), 
-             Expedition = factor(Expedition, levels = c("Dec/20",
-                                                        "Nov_Dec/20",
-                                                        "Nov/20",
-                                                        "Nov/21",
-                                                        "out/21")), 
-             Year = factor(Year, levels = c("2020",
-                                            "2021")),
-             Point = factor(Point, levels = c("L1",
-                                              "L2",
-                                              "L3",
-                                              "L4")))
-  }  
-}
-
-# Criacao do plot NMDS
-{
-  fact_NMDS$Sample %>% unique()
-  fact_NMDS %>% colnames()
-  
-}
-# 1- Preparar os dados para entrar no vegan
-{
-  fact_NMDS_tbl <- fact_NMDS %>% 
-    select(c(Sample, Point, `Curated ID`, Expedition, Year, RRA )) %>%
-    group_by(Sample,`Curated ID`, Expedition, Year, Point) %>%
-    summarise(RRA = sum(RRA)) %>%
-    pivot_wider(c(Sample, Expedition, Year, Point), names_from = `Curated ID` ,values_from = RRA) %>%
-    mutate_if(is.numeric, ~replace(., is.na(.), 0)) %>%
-    mutate("Sample number" = 0)  %>% 
-    ungroup() %>%
-    select(`Sample number`, 1:(ncol(.)-1))
-}
-#2- Associar um numero a cada amostra
-{
-  # Etapa necessaria para os dados entrarem no pacote vegan
-  for (sample in 1:nrow(fact_NMDS_tbl)) {
-    fact_NMDS_tbl$`Sample number`[sample] <- sample
-  }
-  
-  colnames(fact_NMDS_tbl)
-  hist(colSums(fact_NMDS_tbl[,-c(1:5)]))
-  hist(rowSums(fact_NMDS_tbl[,-c(1:5)]))
-  fact_NMDS_tbl[,-c(1:5)]
-  
-  fact_NMDS_tbl %>% select(Sample, `Sample number`) %>% unique()
-  
-}
-#3- Criar data.frame de contagem de especies: rownames sao Sample numbers
-{
-  
-  fact_NMDS_df <- fact_NMDS_tbl  %>% 
-    select(sort(colnames(.))) %>%  ## reorganiza as colunas por ordem alfabetica
-    select(-c( "Sample", ## retira as colunas Sample, Expedition, Year e Point nas primeiras posicoes
-               "Expedition",
-               "Year",
-               "Point")) %>% 
-    as.data.frame() #salva a tabela como data.frame
-  
-} 
-#4- name rows como Sample numbers e remover coluna
-{
-  row.names(fact_NMDS_df) <- fact_NMDS_df$`Sample number` ## row.names como sample numbers
-  
-  fact_NMDS_df <- fact_NMDS_df %>% ## remover a coluna Sample numbers
-    select(-c(`Sample number`))
-  
-  # Substituir o espaco no nome das especies por _
-  colnames(fact_NMDS_df) <- colnames(fact_NMDS_df) %>%  
-    str_replace_all(pattern = " ",replacement = "_") 
-}
-
-#5- Detrended Correspondence Analysis Plot 
-{
-  
-  ## Técnica de estatística Multivariada que permite clusterizar grupos de variaveis
-  ## em conjuntos de dados muito grandes e com gradiente, permitindo observar tendencias
-  
-}
-## tentar deixar esse plot mais visivel
-{
-  fact_NMDS_ps_ord <- decorana(veg = fact_NMDS_df)
-  fact_NMDS_ps_ord %>% summary()
-  fact_NMDS_ps_ord %>% str()
-  fact_NMDS_ps_ord$cproj
-  
-  plot(fact_NMDS_ps_ord)
-  plot(fact_NMDS_ps_ord,type = "p")
-  plot(fact_NMDS_ps_ord,type = "c") 
-  
-  points(fact_NMDS_ps_ord, display = "sites", cex = 0.8, pch=21, col="red", bg="yellow")
-  text(fact_NMDS_ps_ord, display = "sites", cex=0.7, col="blue")
-  text(fact_NMDS_ps_ord, display = "spec", cex=0.7, col="blue")
-}
-
-#6- NMDS analisys 
-{
-  
-  #6a- Calculate distances
-  
-  fact_NMDS_vg_dist <- vegdist(fact_NMDS_df, method="bray")
-  scores(fact_NMDS_vg_dist)
-  
-  fact_NMDS_ps_ord %>% ncol()
-  fact_NMDS_ps_ord <- fact_NMDS_df[,(colnames(fact_NMDS_df) %in% expected_sps)]
-  
-  fact_NMDS_ps_vegan_ord_meta <- metaMDS(veg = fact_NMDS_ps_ord, comm = fact_NMDS_df)
-  # actually autotransform = FALSE doesn't seem to change the results
-  plot(fact_NMDS_ps_vegan_ord_meta, type = "t")
-  
-  
-  fact_NMDS_ps_vegan_ord_meta %>% str()
-  fact_NMDS_ps_vegan_ord_meta
-  plot(all_ps_vegan_ord_meta, type = "t")
-  plot(all_ps_vegan_ord_meta, type = "p")
-  
-  fact_NMDS_ps_vegan_ord_meta$stress
-  
-  #6b- extract NMDS scores from results
-  
-  all_vegan_meta <- (vegan::scores(fact_NMDS_ps_vegan_ord_meta) %>% 
-                       tidyr::as_tibble(rownames = "Sample number")) %>% 
-    mutate(`Sample number` = as.numeric(`Sample number`))
-  
-  #7- bring NMDS scores to complete table
-  
-  all_vegan_meta_tbl <- left_join(x = unique(fact_NMDS_tbl[,c(1:4)]),
-                                  y = all_vegan_meta, by = "Sample number") %>% 
-    # mutate(Primer=factor(Primer,levels = c("NeoFish", "MiFish", "COI")),
-    # Sample = as.factor(Sample)) %>% 
-    select(-c("Sample number"))
-  
-  nmds_PLOT_ord <- ggord(fact_NMDS_ps_vegan_ord_meta, 
-                         grp_in = fact_NMDS_tbl$Year, 
-                         ellipse = F,
-                         size = 10,
-                         arrow = 0.5, veccol = "dark grey",
-                         txt = 3,
-                         repel = T,
-                         max.overlaps = 55
-                         # ,
-                         # # facet=T,
-                         # cols = viridis::viridis(option = "turbo",n = nrow(all_IDs_NMDS_df), alpha = 1)
-  )+
-    annotate(geom = "text",
-             x=c(0.2),
-             y=c(0.20),
-             label=c(paste0("Stress: ",format(round(fact_NMDS_ps_vegan_ord_meta$stress,4)))),
-             size=5) +
-    scale_colour_manual(name = "Samples", values = viridis::viridis(option = "turbo",n = 4, alpha = 1))
-  nmds_PLOT_ord
-  
-  
-  ### Tirar as especies com ids muito genericas e fazer esse grafico apenas
-  ### para 2021 separando os clusters por pontos coletados (L1, L2, L3 e L4)
-  
-  
-  nmds_PLOT <- all_vegan_meta_tbl %>% 
-    # filter(Run %in% c("LGC_MiniSeq_1", "LGC_MiniSeq_2")) %>% 
-    ggplot(aes(x = NMDS1,y = NMDS2, col = Sample,
-               shape = Year,
-               label = Sample,
-               Group = Year))+
-    geom_point(size = 11)+
-    theme_linedraw(base_size = 18) +
-    theme(legend.position="bottom") +
-    coord_fixed(ratio = 1) +
-    scale_color_manual(values = viridis::viridis(option = "turbo",n = 30, alpha = 1, begin = 0, end = 1, direction = 1)
-    ) +
-    annotate(geom = "text",
-             x=c(0.30),y=c(-0.3),label=c(paste0("Stress: ",fact_NMDS_ps_vegan_ord_meta$stress)),size=5)  
-  
-  nmds_PLOT
-  
-  
-  ggsave(file = paste0(figs_path,"/",prjct_radical,"_NMDS.pdf"),
-         plot = nmds_PLOT,
-         device = "png",
-         width = 31,
-         height =20,
-         units = "cm",
-         dpi = 300)
-  
-  
-}
-
-
-
-
-
-
-# NMDS Versao Ecological Applications in R ----
-
+  # NMDS Versao Ecological Applications in R ----  
   # Esta e uma abordagem heuristica, nao estamos testando nenhuma hipotese ainda!
   # O unico objetivo e tentar observar padroes em nossos dados!
+  {
+    # Transformar os dados da comunidade na matriz spp_sample_tbl para entrar no NMDS
+    spp_sample_hel <- decostand(spp_sample_tbl[c,4:35], method = "hellinger")
+    # Criando o NMDS
+    nmds1 <- metaMDS(spp_sample_hel, autotransform = FALSE) # Esta dando uma Warning Message. 
+    # stress is (nearly) zero: you may have insufficient data
+    # Isso seria um problema?
+    # Plotando no vegan
+    nmds1_vplot <- ordiplot(nmds1, type = "t") # type = "t" permite ver o nome dos pontos e das especies
+    
+    # Plotando no ggvegan
+    nmds1_gvplot <- autoplot(nmds1) # ainda nao e um plot ideal. Os proximos passos vao deixar o plot mais publicavel
+    
+    # Plotando no ggplot
+    fort <- fortify(nmds1) # "fortificando" os dados para eles entrarem no ggplot
+    nmds1_ggplot <- ggplot() +
+      geom_point(data = subset(fort, Score == 'sites'), # criacao do scatterplot com os pontos (como visto acima)
+                 mapping = aes(x = NMDS1,
+                               y = NMDS2),
+                 colour = "black",
+                 alpha = 0.5) +
+      geom_segment(data = subset(fort, Score == 'species'), # criacao dos vetores (setas)
+                   mapping = aes(x = 0,
+                                 y = 0,
+                                 xend = NMDS1,
+                                 yend = NMDS2),
+                   arrow = arrow(length = unit(0.015, "npc"),
+                                 type = "closed"),
+                   colour = "darkgrey",
+                   size = 0.8) +
+      geom_text(data = subset(fort, Score == 'species'), # colocando o nome dos pontos e especies 
+                mapping = aes(label = Label, x = NMDS1 * 1.1,
+                              y = NMDS2 * 1.1)) + # multiplicando as coordenadas para afastar os nomes do fim das setas
+      geom_abline(intercept = 0, slope =  0, linetype = "dashed", size = 0.8, colour = "gray") +
+      geom_vline(aes(xintercept = 0), linetype = "dashed", size = 0.8, colour = "gray") +
+      theme(panel.grid.major = element_blank(),
+            panel.grid.minor = element_blank(),
+            panel.background = element_blank(),
+            axis.line = element_line(colour = "black"))
+    
+    ## Plotando
+    ggsave(plot = nmds1_ggplot, filename = "/home/gabriel/projetos/lagoa_ingleses/results/figuras/agosto/NDMS/nmds1_ggplot.pdf",
+           device = "pdf", units = "cm", height = 15, width = 20, dpi = 600)
+    
+    # Plotando no ggord
+    nmds1_ggord <- ggord(nmds1,
+                         grp_in = sort(row.names(spp_sample_tbl)),
+                         vectyp = "dotted",
+                         parse = F,
+                         ellipse = F,
+                         size = 8,
+                         arrow = 1, 
+                         veccol = "dark grey",
+                         txt = 3,
+                         repel = T,
+                         veclsz = 0.75,
+    ) +
+      annotate(geom = "text",
+               x = c(-1.25),
+               y = c(1),
+               label = c(paste0("Stress: ",
+                                format(round(nmds1$stress,4)))),
+               size = 5)
+    
+    ggsave(plot = nmds1_ggord, filename = "/home/gabriel/projetos/lagoa_ingleses/results/figuras/agosto/NDMS/nmds1_ggord.pdf",
+           device = "pdf", units = "cm", height = 15, width = 20, dpi = 600)
+  }
+  # Minha Versao ----
+  {
+    
+  } 
+}
+# PCA Plots ----
 {
-  # Transformar os dados da comunidade na matriz spp_sample_tbl para entrar no NMDS
-  spp_sample_hel <- decostand(spp_sample_tbl, method = "hellinger")
-  # Criando o NMDS
-  nmds1 <- metaMDS(spp_sample_hel, autotransform = FALSE) # Esta dando uma Warning Message. 
-                                                          # stress is (nearly) zero: you may have insufficient data
-                                                          # Isso seria um problema?
-  # Plotando no vegan
-  nmds1_vplot <- ordiplot(nmds1, type = "t") # type = "t" permite ver o nome dos pontos e das especies
+  pca1 <- rda(spp_sample_tbl)
+  pca1
   
-  # Plotando no ggvegan
-  nmds1_gvplot <- autoplot(nmds1) # ainda nao e um plot ideal. Os proximos passos vao deixar o plot mais publicavel
+  # o BiodiversityR nao roda em servidores devido a problemas com o X11 
+  # por isso irei rodar na minha maquina domestica, e para isso vou baixar a matriz que possui as amostras e abundancias
+  write.csv(spp_sample_tbl, "/home/gabriel/projetos/lagoa_ingleses/tabelas/raw/run_2_4_5/ssp_sample_tbl", row.names = TRUE)
   
-  # Plotando no ggplot
-  fort <- fortify(nmds1) # "fortificando" os dados para eles entrarem no ggplot
-  nmds1_ggplot <- ggplot() +
-    geom_point(data = subset(fort, Score == 'sites'), # criacao do scatterplot com os pontos (como visto acima)
-               mapping = aes(x = NMDS1,
-                             y = NMDS2),
-               colour = "black",
-               alpha = 0.5) +
-    geom_segment(data = subset(fort, Score == 'species'), # criacao dos vetores (setas)
-                 mapping = aes(x = 0,
-                               y = 0,
-                               xend = NMDS1,
-                               yend = NMDS2),
-                 arrow = arrow(length = unit(0.015, "npc"),
-                               type = "closed"),
-                 colour = "darkgrey",
-                 size = 0.8) +
-    geom_text(data = subset(fort, Score == 'species'), # colocando o nome dos pontos e especies 
-              mapping = aes(label = Label, x = NMDS1 * 1.1,
-                            y = NMDS2 * 1.1)) + # multiplicando as coordenadas para afastar os nomes do fim das setas
-    geom_abline(intercept = 0, slope =  0, linetype = "dashed", size = 0.8, colour = "gray") +
-    geom_vline(aes(xintercept = 0), linetype = "dashed", size = 0.8, colour = "gray") +
-    theme(panel.grid.major = element_blank(),
-          panel.grid.minor = element_blank(),
-          panel.background = element_blank(),
-          axis.line = element_line(colour = "black"))
-  
-  ## Plotando
-  ggsave(plot = nmds1_ggplot, filename = "/home/gabriel/projetos/lagoa_ingleses/results/figuras/agosto/NDMS/nmds1_ggplot.pdf",
-         device = "pdf", units = "cm", height = 15, width = 20, dpi = 600)
-  
-  # Plotando no ggord
-  nmds1_ggord <- ggord(nmds1,
-                       grp_in = sort(row.names(spp_sample_tbl)),
-                       vectyp = "dotted",
-                       parse = F,
-                       ellipse = F,
-                       size = 8,
-                       arrow = 1, 
-                       veccol = "dark grey",
-                       txt = 3,
-                       repel = T,
-                       veclsz = 0.75,
-                       ) +
-    annotate(geom = "text",
-             x = c(-1.25),
-             y = c(1),
-             label = c(paste0("Stress: ",
-                              format(round(nmds1$stress,4)))),
-  size = 5)
-   
-  ggsave(plot = nmds1_ggord, filename = "/home/gabriel/projetos/lagoa_ingleses/results/figuras/agosto/NDMS/nmds1_ggord.pdf",
-         device = "pdf", units = "cm", height = 15, width = 20, dpi = 600)
   }
 # Mapa da Lagoa dos Ingleses e os respectivos pontos ----
   
