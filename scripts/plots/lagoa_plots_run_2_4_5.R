@@ -54,6 +54,44 @@ editor_options:
   raw_results_tbl$`Curated ID`[raw_results_tbl$`Curated ID` %in% c("Oreochromis niloticus")] <- "Tilapia rendalli" # Oreochromis niloticus é Tilapia
 }
 
+# Paletas de cores ----
+{
+  color <- grDevices::colors()[grep('gr(a|e)y', grDevices::colors(), invert = T)] # fonte: https://stackoverflow.com/questions/15282580/how-to-generate-a-number-of-most-distinctive-colors-in-r
+  color2 <- c("#dc562a", # fonte: https://medialab.github.io/iwanthue/
+              "#8e9fd9", 
+              "#ca833f", 
+              "#4d5a91", 
+              "#cbcd9f", 
+              "#2f2641", 
+              "#d87d70", 
+              "#313a25", 
+              "#c94576", 
+              "#4e7989", 
+              "#8e3526", 
+              "#d5acad", 
+              "#591f2d", 
+              "#550037", 
+              "#8d6571",
+              "#67d6b1", 
+              "#6639c6", 
+              "#6cda4e", 
+              "#c24fd6", 
+              "#c9db3e", 
+              "#422478", 
+              "#a7df83", 
+              "#dc42ab", 
+              "#519a40", 
+              "#736dd8", 
+              "#d9b647", 
+              "#853a7d", 
+              "#858438", 
+              "#d48fce", 
+              "#4e7b53", 
+              "#db3c4e", 
+              "#8acad8")
+  
+}
+
 # Tabela wider para NMDS, Beta Diversidade e PCA ----
 
 # Essa tabela e uma matriz onde as linhas sao as amostras e as colunas sao as especies
@@ -375,7 +413,7 @@ editor_options:
 {
   ### Proporcao de peixes
   {peixe <- c("Não-peixes", "Peixes")
-  ASVs <- c(25130, (160274 + 2545429))
+  reads <- c(25130, (160274 + 2545429))
   proporcao <- c(0.92, (5.87 + 93.21))
   peixes <- data_frame(peixe, ASVs, proporcao)
   }
@@ -390,7 +428,7 @@ editor_options:
                       colour = "black", size = 6) +
             guides(col = guide_legend(nrow = 6)) +
             xlab("Espécies") + ## alterar o nome do eixo x
-            ylab("Proporção de ASVs %") + ## alterar o nome do eixo y
+            ylab("Proporção de reads %") + ## alterar o nome do eixo y
             ggtitle(label = "Proporção de identificações associadas a peixes") + ## alterar o titulo do plot
             theme_bw(base_size = 16) +
             scale_fill_manual(values = viridis::viridis(n=4)[c(2,3)]) +
@@ -404,7 +442,7 @@ editor_options:
   
   ### Proporcao de ids
   especie <- c("Espécie", "Outros")
-  e_ASVs <- c(2545429, 160274)
+  e_reads <- c(2545429, 160274)
   e_proporcao <- c(0.94, 0.06)
   especies <- data_frame(especie, e_ASVs, e_proporcao)
   
@@ -419,7 +457,7 @@ editor_options:
                     colour = "black", size = 6) +
           guides(col = guide_legend(nrow = 6)) +
           xlab("Nível taxonômico") + ## alterar o nome do eixo x
-          ylab("Proporção de ASVs %") + ## alterar o nome do eixo y
+          ylab("Proporção de reads %") + ## alterar o nome do eixo y
           ggtitle(label = "Proporção de identificações e \n respectivos níveis taxonômicos") + ## alterar o titulo do plot
           theme_bw(base_size = 16) +
           scale_fill_manual(values = viridis::viridis(n=4)[c(2,3)]) +
@@ -430,8 +468,6 @@ editor_options:
   ggsave(plot = plot_ids, filename = "/home/gabriel/projetos/lagoa_ingleses/results/figuras/agosto/barplots/plot_ids.pdf",
          device = "pdf", units = "cm", height = 15, width = 15, dpi = 600)
 }
-
-
 
 # Tile Plots ----
 
@@ -679,6 +715,74 @@ editor_options:
       ggsave(plot = tile_ponto_few, filename = "/home/gabriel/projetos/lagoa_ingleses/results/figuras/agosto/tile_plots/tile_ponto_few.pdf",
            device = "pdf", units = "cm", height = 20, width = 30, dpi = 600)
 }
+  {# versão EBI
+  tile_EBI <- few_ID_tbl %>%
+      mutate(Expedition = factor(Expedition)) %>% # transformando variaveis categoricas em fatores com niveis
+      mutate(Sample = factor(Sample,
+                             levels = c("L1_nov21",
+                                        "L1_out21",
+                                        "L2_nov21",
+                                        "L2_out21",
+                                        "L3_nov21",
+                                        "L3_out21",
+                                        "L4_nov21",
+                                        "L4_out21",
+                                        "L1-neo-mi",
+                                        "L2 Dez/20",
+                                        "L2 Nov/20"
+                                        ))) %>%
+      mutate(Expedition = factor(Expedition,
+                                 levels = c("Nov_Dec/20",
+                                            "Nov/20",
+                                            "Dec/20",
+                                            "out/21",
+                                            "Nov/21"
+                                            ))) %>%
+      mutate(Point = factor(Point)) %>%
+      mutate(File_name = factor(File_name)) %>%
+      mutate(Expedition = factor(Expedition)) %>%
+      filter(!is.na(`Curated ID`)) %>%   # retirar os NA
+      filter(Expedition %in% c("out/21", # deixando apenas as amostras de 2021
+                               "Nov/21")) %>%
+      filter(!`Curated ID` %in% c("Cavia magna", # Bela pediu para retirar essas especies
+                                 "Bos taurus",
+                                 "Canis familiaris",
+                                 "Didelphis albiventris (Gamba)",
+                                 "Homo sapiens",
+                                 "Hydrochaeris hydrochaeris (Capivara)",
+                                 "Nannopterum brasilianus",
+                                 "Oryctolagus cuniculus (Coelho-bravo)",
+                                 "Progne chalybea (Andorinha-grande)",
+                                 "Sus scrofa")) %>% 
+      
+    ### Tile plot
+      ggplot(aes(y = `Curated ID`, 
+               # x = Point,
+               x = Expedition,
+               fill = RRA
+               )) +
+        geom_tile() +
+        facet_grid(~Point, # facetando por ponto
+                   scales = "free_x",
+                   space = "free_x") +
+        labs(fill ='Abundância \nrelativa (%)',
+             x = "Amostras",
+             y= "Espécies") +
+        ggtitle(label = "Espécies identificadas em cada ponto") +
+        #geom_hline(yintercept = c(8.5)) + # linha que separa as especies de peixes e nao-peixes
+        scale_fill_continuous(
+          trans = "log10", # exibir a abundancia em escala logaritmica para favorecer a exibicao de baixo RRA
+          breaks = c(0.001, 0.01, 0.1, 1, 10, 75), # definindo os valores que aparecem na escala
+          type = "viridis") +
+        theme(text=element_text(size = 10, face = "bold")) +
+        guides(col = guide_legend(nrow = 6)) +
+        theme_bw(base_size = 16) +
+        theme(plot.title = element_text(hjust = 0.5))
+  
+    ## Plotando
+      ggsave(plot = tile_EBI, filename = "/home/gabriel/projetos/lagoa_ingleses/results/figuras/agosto/tile_plots/tile_EBI.pdf",
+             device = "pdf", units = "cm", height = 20, width = 30, dpi = 600)
+}
 
   ## Title plot exibindo todas as ids
   {
@@ -865,7 +969,8 @@ editor_options:
 
 
 # Alfa diversidade Ponto/Mes ----
-{
+  ## Especies
+  {
   alpha_tbl <- raw_results_tbl %>%
     # filter(`Relative abundance on sample` >= 0.01) %>% # heron pediu para manter as ASVs espurias
     filter(!`Curated ID` %in% c("Actinopteri", ## tirando as ASVs que nao foram identificadas a nivel de especie, nao-peixes e NA
@@ -878,6 +983,7 @@ editor_options:
                                 "Hoplias",
                                 "Pimelodus",
                                 "",
+                                "Cavia magna",
                                 "Cutibacterium acnes",
                                 "Bos taurus",
                                 "Canis familiaris",
@@ -892,9 +998,10 @@ editor_options:
     mutate("Mês" = str_split_fixed(string = .$Sample, # criando uma nova coluna quebrando as infos da coluna Sample
                                    pattern = "_",
                                    n = 2)[,2]) %>%
-    mutate(Mês = factor(Mês, levels = c("out21", "nov21"))) %>%
-    filter(!Sample %in% c("LI1-neo-mi",
-                          "L2_dez20")) %>% 
+    mutate(Mês = factor(Mês, levels = c("out21",
+                                        "nov21"))) %>%
+    filter(Expedition %in% c("out/21", # deixando apenas as amostras de 2021
+                             "Nov/21")) %>%
     group_by(Sample,
              Read_origin,
              Primer,
@@ -1002,26 +1109,121 @@ editor_options:
   }
   
   ## Ids por amostra
-  
   {
-    print(alpha_plot_id_sample <- alpha_tbl %>% 
-      mutate(`Curated ID` = factor(`Curated ID`)) %>% 
-      ggplot(aes(x = Sample,
-                 y = `ID Abundance on sample (%)`,
-                 group = Sample,
-                 fill = `Curated ID`)) +
-        ggtitle(label = "Espécies por amostra") +
-        xlab("Amostra") +
-        ylab("Proporção %") +
-        guides(fill = guide_legend("Espécie")) + ## alterar o titulo da legenda
-        # theme(legend.position = "bottom") +
-        geom_bar(stat = "identity", position = "stack") +
-        scale_fill_discrete(viridis::turbo(n = 32)))
+    print(alpha_plot_id_sample <- alpha_tbl %>%
+            mutate(`Curated ID` = factor(`Curated ID`)) %>% 
+            ggplot(aes(x = Sample,
+                       y = `ID Abundance on sample (%)`,
+                       group = Sample,
+                       fill = as.factor(`Curated ID`))) +
+            ggtitle(label = "Espécies por amostra") +
+            xlab("Amostra") +
+            ylab("Proporção %") +
+            guides(fill = guide_legend("Espécie")) + ## alterar o titulo da legenda
+            geom_bar(stat = "identity", position = "stack") +
+            scale_fill_manual(values = color2))
     
     
     ## Plotando
     ggsave(plot = alpha_plot_id_sample, filename = "/home/gabriel/projetos/lagoa_ingleses/results/figuras/agosto/barplots/alpha_plot_id_sample.pdf",
            device = "pdf", units = "cm", height = 15, width = 28, dpi = 600)
+  }
+  
+}
+  ## ASVs
+  {  ## Facetar por ponto 
+  {
+    print(asv_plot_ponto <- alpha_tbl %>% 
+            group_by(Sample,Point,Mês) %>%
+            summarise(`Num ASVs`=sum(`Num ASVs`)) %>%
+            ungroup() %>%
+            ggplot(aes(x = Sample,
+                       y = `Num ASVs`,
+                       fill = Mês)) + ## preenchendo as cores por mes de coleta
+            geom_bar(stat = "identity") +
+            guides(col = guide_legend(nrow = 6)) +
+            xlab("Amostra") +
+            ylab("Número de ASVs") +
+            ggtitle(label = "ASVs por amostra") +
+            theme_bw(base_size = 16) +
+            theme(legend.position = "bottom") +
+            theme(axis.text.x = element_text(angle = 45,hjust = 1)) +
+            geom_text(stat='identity', ## labels dentro das barras
+                      aes(label = `Num ASVs`),
+                      position = position_dodge(width = 0.9),
+                      vjust = 1.4,
+                      colour = "#ffffff",
+                      size = 6
+            ) +
+            facet_grid2(cols = vars(Point), ##facetando por ponto
+                        scales = "free_x",
+                        axes = "all",
+                        space = "free_x",
+                        independent ='x') +
+            scale_fill_manual(values = viridis::viridis(n=6)[c(2,5)]))
+    
+    ## Plotando
+    ggsave(plot = asv_plot_ponto, filename = "/home/gabriel/projetos/lagoa_ingleses/results/figuras/agosto/barplots/asv_plot_ponto.pdf",
+           device = "pdf", units = "cm", height = 15, width = 20, dpi = 600)
+    }
+  
+  ## Facetar por Mes/ponto
+  {
+    print(asv_plot_mes_ponto <- alpha_tbl %>% 
+            group_by(Sample,Point,Mês) %>%
+            summarise(`Num ASVs`=sum(`Num ASVs`)) %>%
+            ungroup() %>% 
+            ggplot(aes(x = Sample,
+                       y = `Num ASVs`,
+                       fill = Point)) +
+            geom_bar(stat = "identity") +
+            guides(col = guide_legend(nrow = 6)) +
+            xlab("Amostra") +
+            ylab("Número de ASVs") +
+            ggtitle(label = "Número de ASVs por amostra") +
+            theme_bw(base_size = 16) +
+            theme(legend.position = "bottom") +
+            theme(axis.text.x = element_text(angle = 45,hjust = 1)) +
+            geom_text(stat='identity', ## codigo que exibe dentro das barras a contagem
+                      aes(label=`Num ASVs`),
+                      position = position_dodge(width = 0.9),
+                      vjust = 1.4,
+                      colour = "#ffffff", size = 6) +
+            facet_grid2(cols = vars(Mês), ##facetando por mes
+                        scales = "free_x",
+                        axes = "all",
+                        space = "free_x",
+                        independent ='x') +
+            scale_fill_manual(values = viridis::viridis(n=10)[c(1,7,5,9)]))
+    
+    ## Plotando
+    ggsave(plot = asv_plot_mes_ponto, filename = "/home/gabriel/projetos/lagoa_ingleses/results/figuras/agosto/barplots/asv_plot_mes_ponto.pdf",
+           device = "pdf", units = "cm", height = 15, width = 20, dpi = 600)
+  }
+  
+  ## Facetar por Mes
+  {
+    print(asv_plot_mes_join <- alpha_tbl %>% 
+            group_by(Sample,Point,Mês) %>%
+            summarise(`Num ASVs`=sum(`Num ASVs`)) %>%
+            ungroup() %>% 
+            ggplot(aes(x = Mês,
+                       y = `Num ASVs`,
+                       fill = Point)) + ## preenchendo as barras por mes de coleta
+            geom_bar(stat = "identity") +
+            guides(col = guide_legend(nrow = 6)) +
+            xlab("Mês") +
+            ylab("Número de ASVs") +
+            ggtitle(label = "Número de ASVs por mês") +
+            theme_bw(base_size = 16) +
+            geom_text(stat = 'identity',
+                      aes(label = `Num ASVs`),
+                      position = position_stack(vjust = 0.5),
+                      size = 4))
+    
+    ## Plotando
+    ggsave(plot = asv_plot_mes_join, filename = "/home/gabriel/projetos/lagoa_ingleses/results/figuras/agosto/barplots/asv_plot_mes_join.pdf",
+           device = "pdf", units = "cm", height = 15, width = 14, dpi = 600)
   }
   
 }
