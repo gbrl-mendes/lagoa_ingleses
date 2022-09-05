@@ -106,89 +106,97 @@ editor_options:
   spp_sample_tbl_f <- raw_results_tbl %>%
     select(c(
       "Sample",
-      # "Run",
-      # "Group",
-      "Expedition",
-      # "Coleta",
-      "Year",
-      #"Sample.Name",
-      #"File_name",
-      # "OTU",
-      # "Read_origin",
-      "Curated ID",
-      # "final ID",
-      # "Abundance",
-      # "Relative abundance to all samples",
-      "Relative abundance on sample",
-      # "Sample.total.abundance",
-      # "Type",
-        "Point")) %>%
-      filter(!`Curated ID` %in% c("Actinopteri", ## tirando as ASVs que nao foram identificadas a nivel de especie, nao-peixes e NA
-                                  "Astyanax",
-                                  "Characidae",
-                                  "Characidium",
-                                  "Characiformes",
-                                  "Cichla",
-                                  "Cichlidae",
-                                  "Hoplias",
-                                  "Pimelodus",
-                                  "",
-                                  "Cutibacterium acnes",
-                                  "Bos taurus",
-                                  "Canis familiaris",
-                                  "Didelphis albiventris (Gamba)",
-                                  "Homo sapiens",
-                                  "Hydrochaeris hydrochaeris (Capivara)",
-                                  "Nannopterum brasilianus",
-                                  "Oryctolagus cuniculus (Coelho-bravo)",
-                                  "Progne chalybea (Andorinha-grande)",
-                                  "Sus scrofa"
-      )) %>%
-      filter(!Sample %in% c("LI1-neo-mi",
-                            "L2_dez20",
-                            "L2_nov20")
-      ) %>% 
-      group_by(Sample,
-               Expedition,
-               Point,
-               Year,
-               `Curated ID`
-      ) %>%
-      summarize(`ID Abundance on sample (%)` = sum(`Relative abundance on sample`)
-      ) %>%
-      mutate(Sample = factor(Sample, levels = c("L1_out21",
-                                                "L1_nov21",
-                                                "L2_out21",
-                                                "L2_nov21",
-                                                "L3_out21",
-                                                "L3_nov21",
-                                                "L4_out21",
-                                                "L4_nov21"
-      ))) %>%
-      ungroup() %>%
-      unique()  %>% 
-      pivot_wider(names_from = `Curated ID`, 
-                  values_from = `ID Abundance on sample (%)`)
+             # "Run",
+             # "Group",
+             "Expedition",
+             # "Coleta",
+             "Year",
+             #"Sample.Name",
+             #"File_name",
+             # "OTU",
+             # "Read_origin",
+             "Curated ID",
+             # "final ID",
+             # "Abundance",
+             # "Relative abundance to all samples",
+             "Relative abundance on sample",
+             # "Sample.total.abundance",
+             # "Type",
+             "Point")) %>%
+    filter(!`Curated ID` %in% c("Actinopteri", ## tirando as ASVs que nao foram identificadas a nivel de especie, nao-peixes e NA
+                                "Astyanax",
+                                "Characidae",
+                                "Characidium",
+                                "Characiformes",
+                                "Cichla",
+                                "Cichlidae",
+                                "Hoplias",
+                                "Pimelodus",
+                                "",
+                                "Cutibacterium acnes",
+                                "Bos taurus",
+                                "Canis familiaris",
+                                "Didelphis albiventris (Gamba)",
+                                "Homo sapiens",
+                                "Hydrochaeris hydrochaeris (Capivara)",
+                                "Nannopterum brasilianus",
+                                "Oryctolagus cuniculus (Coelho-bravo)",
+                                "Progne chalybea (Andorinha-grande)",
+                                "Sus scrofa"
+                                )) %>%
+    filter(!Sample %in% c("LI1-neo-mi",
+                          "L2_dez20",
+                          "L2_nov20")
+           ) %>%
+    group_by(Sample,
+             #Expedition,
+             #Point,
+             #Year,
+             `Curated ID`
+             ) %>%
+    summarize(`ID Abundance on sample (%)` = sum(`Relative abundance on sample`)
+              ) %>%
+    mutate(Sample = factor(Sample, levels = c("L1_out21",
+                                              "L1_nov21",
+                                              "L2_out21",
+                                              "L2_nov21",
+                                              "L3_out21",
+                                              "L3_nov21",
+                                              "L4_out21",
+                                              "L4_nov21"
+                                              ))) %>%
+    # pivot_wider(names_from = `Curated ID`,
+    #               values_from = `ID Abundance on sample (%)`) %>%
+    pivot_wider(names_from = Sample, 
+                values_from = `ID Abundance on sample (%)`) %>% 
+    ungroup() %>%
+    unique()
   
-  ## incluindo a coluna de forma para fazer o plot
-  spp_sample_tbl_f <- spp_sample_tbl_f %>%  mutate("Shape" = if_else(Expedition %in% c("out/21"), 1, 2)) %>%
-    relocate("Shape") # passar a coluna para o começo
+  ## substituindo NA por 0
+  spp_sample_tbl_f[is.na(spp_sample_tbl_f)] = 0
   
   ## transformando a tabela em um data frame
   spp_sample_tbl_f <- as.data.frame(spp_sample_tbl_f) 
   
+  # Curated IDs como row.names
+  row.names(spp_sample_tbl_f) <- spp_sample_tbl_f$`Curated ID`
+  
+  # deletando Curated ID
+  spp_sample_tbl_f <- spp_sample_tbl_f %>% select(-c(`Curated ID`))
+  
+  ## incluindo a coluna de forma para fazer o plot
+  # spp_sample_tbl_f <- spp_sample_tbl_f %>%  mutate("Shape" = if_else(Expedition %in% c("out/21"), 1, 2)) %>%
+  #   relocate("Shape") # passar a coluna para o começo
+  
   ## nomes das amostras como row names
-  row.names(spp_sample_tbl_f) <- spp_sample_tbl_f$Sample 
+  # row.names(spp_sample_tbl_f) <- spp_sample_tbl_f$Sample 
   
   ## retirando a coluna Samples
-  spp_sample_tbl_f <- spp_sample_tbl_f %>% select(-c(Sample)) 
+  # spp_sample_tbl_f <- spp_sample_tbl_f %>% select(-c(Sample)) 
   
-  ## substituindo NA por 0
-  spp_sample_tbl_f[is.na(spp_sample_tbl_f)] = 0 
-  
-  ## Substituir o espaco no nome das especies por _
-  colnames(spp_sample_tbl_f) <- colnames(spp_sample_tbl_f) %>%  
-    str_replace_all(pattern = " ",replacement = "_")
+    ## Substituir o espaco no nome das especies por _
+  # colnames(spp_sample_tbl_f) <- colnames(spp_sample_tbl_f) %>%  
+  #  str_replace_all(pattern = " ",replacement = "_")
 }
 
 ## Tabela todas Ids a nível de especie
@@ -230,9 +238,9 @@ editor_options:
                           "L2_nov20")
     ) %>% 
     group_by(Sample,
-             Expedition,
-             Point,
-             Year,
+             #Expedition,
+             #Point,
+             #Year,
              `Curated ID`
     ) %>%
     summarize(`ID Abundance on sample (%)` = sum(`Relative abundance on sample`)
@@ -248,28 +256,22 @@ editor_options:
     ))) %>%
     ungroup() %>%
     unique()  %>% 
-    pivot_wider(names_from = `Curated ID`, 
-                values_from = `ID Abundance on sample (%)`)
-  
-  ## incluindo a coluna de forma para fazer o plot
-  spp_sample_tbl_all <- spp_sample_tbl_all %>%  mutate("Shape" = if_else(Expedition %in% c("out/21"), 1, 2)) %>%
-    relocate("Shape") # passar a coluna para o começo
-  
-  ## transformando a tabela em um data frame
-  spp_sample_tbl_all <- as.data.frame(spp_sample_tbl_all) 
-  
-  ## nomes das amostras como row names
-  row.names(spp_sample_tbl_all) <- spp_sample_tbl_all$Sample 
-  
-  ## retirando a coluna Samples
-  spp_sample_tbl_all <- spp_sample_tbl_all %>% select(-c(Sample)) 
+    pivot_wider(names_from = Sample, 
+                values_from = `ID Abundance on sample (%)`) %>% 
+    ungroup() %>%
+    unique()
   
   ## substituindo NA por 0
   spp_sample_tbl_all[is.na(spp_sample_tbl_all)] = 0
   
-  ## Substituir o espaco no nome das especies por _
-  colnames(spp_sample_tbl_all) <- colnames(spp_sample_tbl_all) %>%  
-    str_replace_all(pattern = " ",replacement = "_")
+  ## transformando a tabela em um data frame
+  spp_sample_tbl_all <- as.data.frame(spp_sample_tbl_all) 
+  
+  # Curated IDs como row.names
+  row.names(spp_sample_tbl_all) <- spp_sample_tbl_all$`Curated ID`
+  
+  # deletando Curated ID
+  spp_sample_tbl_all <- spp_sample_tbl_all %>% select(-c(`Curated ID`))
 }
 
 ## Tabela todas amostras todas ids e samples
@@ -307,9 +309,9 @@ editor_options:
                                 "Cutibacterium acnes"
                                 )) %>% 
     group_by(Sample,
-             Expedition,
-             Point,
-             Year,
+             #Expedition,
+             #Point,
+             #Year,
              `Curated ID`
     ) %>%
     summarize(`ID Abundance on sample (%)` = sum(`Relative abundance on sample`)
@@ -328,34 +330,22 @@ editor_options:
     ))) %>%
     ungroup() %>%
     unique()  %>% 
-    pivot_wider(names_from = `Curated ID`, 
-                values_from = `ID Abundance on sample (%)`)
+    pivot_wider(names_from = Sample, 
+                values_from = `ID Abundance on sample (%)`) %>% 
+    ungroup() %>%
+    unique()
   
-  ## incluindo a coluna de forma para fazer o plot
-  spp_sample_tbl_tudo <- spp_sample_tbl_tudo %>%  
-    mutate("Shape" = case_when(
-      Expedition %in% c("Nov_Dec/20") ~"0", 
-      Expedition %in% c("Dec/20") ~"1",
-      Expedition %in% c("Nov/20") ~"2",
-      Expedition %in% c("Nov/21") ~"5",
-      Expedition %in% c("out/21") ~"6")) %>% 
-    relocate("Shape") # passar a coluna para o começo
+  ## substituindo NA por 0
+  spp_sample_tbl_tudo[is.na(spp_sample_tbl_tudo)] = 0
   
   ## transformando a tabela em um data frame
   spp_sample_tbl_tudo <- as.data.frame(spp_sample_tbl_tudo) 
   
-  ## nomes das amostras como row names
-  row.names(spp_sample_tbl_tudo) <- spp_sample_tbl_tudo$Sample 
+  # Curated IDs como row.names
+  row.names(spp_sample_tbl_tudo) <- spp_sample_tbl_tudo$`Curated ID`
   
-  ## retirando a coluna Samples
-  spp_sample_tbl_tudo <- spp_sample_tbl_tudo %>% select(-c(Sample)) 
-  
-  ## substituindo NA por 0
-  spp_sample_tbl_tudo[is.na(spp_sample_tbl_tudo)] = 0 
-  
-  ## Substituir o espaco no nome das especies por _
-  colnames(spp_sample_tbl_tudo) <- colnames(spp_sample_tbl_tudo) %>%  
-    str_replace_all(pattern = " ",replacement = "_")
+  # deletando Curated ID
+  spp_sample_tbl_tudo <- spp_sample_tbl_tudo %>% select(-c(`Curated ID`))
 }
 
 # Bar Plots Proporcao Especies/Ids ----
@@ -1131,7 +1121,8 @@ editor_options:
   
 }
   ## ASVs
-  {  ## Facetar por ponto 
+{  
+  ## Facetar por ponto
   {
     print(asv_plot_ponto <- alpha_tbl %>% 
             group_by(Sample,Point,Mês) %>%
@@ -1482,7 +1473,8 @@ editor_options:
   }
   ## tentar deixar esse plot mais visivel
   {
-    fact_NMDS_ps_ord <- decorana(veg = fact_NMDS_df)
+    # fact_NMDS_ps_ord <- decorana(veg = fact_NMDS_df)
+    fact_NMDS_ps_ord <- decorana(veg = spp_sample_tbl_f)
     fact_NMDS_ps_ord %>% summary()
     fact_NMDS_ps_ord %>% str()
     fact_NMDS_ps_ord$cproj
@@ -1501,20 +1493,22 @@ editor_options:
     
     #6a- Calculate distances
     
-    fact_NMDS_vg_dist <- vegdist(fact_NMDS_df, method="bray")
+    # fact_NMDS_vg_dist <- vegdist(fact_NMDS_df, method="bray")
+    fact_NMDS_vg_dist <- vegdist(spp_sample_tbl_f, method="bray")
     scores(fact_NMDS_vg_dist)
     
     fact_NMDS_ps_ord %>% ncol()
     fact_NMDS_ps_ord <- fact_NMDS_df[,(colnames(fact_NMDS_df) %in% expected_sps)]
     
-    fact_NMDS_ps_vegan_ord_meta <- metaMDS(veg = fact_NMDS_ps_ord, comm = fact_NMDS_df)
+    # fact_NMDS_ps_vegan_ord_meta <- metaMDS(veg = fact_NMDS_ps_ord, comm = fact_NMDS_df)
+    fact_NMDS_ps_vegan_ord_meta <- metaMDS(veg = fact_NMDS_ps_ord, comm = spp_sample_tbl_f)
     # actually autotransform = FALSE doesn't seem to change the results
     plot(fact_NMDS_ps_vegan_ord_meta, type = "t")
     
     fact_NMDS_ps_vegan_ord_meta %>% str()
     fact_NMDS_ps_vegan_ord_meta
-    plot(all_ps_vegan_ord_meta, type = "t")
-    plot(all_ps_vegan_ord_meta, type = "p")
+    plot(fact_NMDS_ps_vegan_ord_meta, type = "t")
+    plot(fact_NMDS_ps_vegan_ord_meta, type = "p")
     
     fact_NMDS_ps_vegan_ord_meta$stress
     
@@ -1548,7 +1542,8 @@ editor_options:
                x=c(0.2),
                y=c(0.20),
                label=c(paste0("Stress: ",format(round(fact_NMDS_ps_vegan_ord_meta$stress,4)))),
-               size=5) +
+               size=5) 
+    +
       scale_colour_manual(name = "Samples", values = viridis::viridis(option = "turbo",n = 4, alpha = 1))
     nmds_PLOT_ord
     
@@ -1663,13 +1658,37 @@ editor_options:
 }
 # PCA Plots ----
 {
-  pca1 <- rda(spp_sample_tbl)
-  pca1
+  {
+    # o BiodiversityR nao roda em servidores devido a problemas com o X11 
+    # por isso irei rodar na minha maquina domestica, e para isso vou baixar a matriz que possui as amostras e abundancias
+    write.csv(spp_sample_tbl_f, "/home/gabriel/projetos/lagoa_ingleses/tabelas/raw/run_2_4_5/ssp_sample_tbl_f", row.names = TRUE)
+  }
   
-  # o BiodiversityR nao roda em servidores devido a problemas com o X11 
-  # por isso irei rodar na minha maquina domestica, e para isso vou baixar a matriz que possui as amostras e abundancias
-  write.csv(spp_sample_tbl, "/home/gabriel/projetos/lagoa_ingleses/tabelas/raw/run_2_4_5/ssp_sample_tbl", row.names = TRUE)
-  
+  # PCA analysis
+  {
+    pca1 <-rda(spp_sample_tbl_f)
+    summary(pca1)
+    
+    PCAsignificance(pca1)
+    ordiplot(pca1)
+    ordiplot(pca1, type = "t")
+    
+    # Autoplot  
+    {
+      autoplot(pca1, legend.position = "none") +
+        xlab("PC1") +
+        ylab("PC2") +
+        geom_abline(intercept = 0, slope = 0, linetype = "dashed", size = 0.3) +
+        geom_vline(aes(xintercept = 0), linetype = "dashed", size = 0.3) +
+        theme(panel.grid.major = element_blank(),
+              panel.grid.minor = element_blank(),
+              panel.background = element_blank(),
+              axis.line = element_line(colour = "black", size = 0.3)) 
+      # +
+      #   scale_shape_manual(name = "Expedition",
+      #                      values = spp_sample_tbl_f$Shape)
+    }
+  }
   }
 # Mapa da Lagoa dos Ingleses e os respectivos pontos ----
   
