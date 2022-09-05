@@ -1,14 +1,6 @@
 Considerando as filtragens que passaram pela grouped_by_id e few_id_tbl, 
-temos 39 espécies sendo 31 espécies de peixes.
+temos 40 espécies sendo 32 espécies de peixes.
 
-Das espécies de peixes, tempos 305 ASVs. As outras espécies correspondem a 58 ASVs.
+Das espécies de peixes, tempos 279 ASVs. As outras espécies correspondem a 51 ASVs.
 No total foram avaliadas 8 amostras distintas, correspondentes aos 4 pontos da lagoa dos ingleses nos meses de outubro e novembro.
 
-alpha_tbl: 46 espécies no total: 36 espécies de peixes e 10 espécies não-peixes
-alpha_tbl: 364 ASVs sendo 305 ASVs de peixes. (59 ASVs de não-peixes)
-
-Após a correção:
-279 ASVs de peixes
-330 ASVs no total (51 ASVs de não peixes)
-
-40 espécies sendo 30 de peixes e 10 de não peixes
