@@ -393,8 +393,8 @@ editor_options:
     summarize("Peixe" = unique(Peixe), #identificacao se as ASVs sao de peixes ou nao-peixes
               "Especie" = unique(Especie), #identificacao se as ASVs foram identificadas ao nivel de especie
               # `RRA` = sum(`Relative abundance on sample`)/11, #proporcao calculada com a RRA
-              `ASVs` = sum(`Abundance`), #numero de ASVs
-              `Proporcao` = sum(`ASVs` / 2730833 * 100) #proporcao calculada com o total de ASVs
+              `Reads` = sum(`Abundance`), #numero de ASVs
+              `Proporcao` = sum(`Reads` / 2730833 * 100) #proporcao calculada com o total de ASVs
     ) %>%
     ungroup()
 }
@@ -437,6 +437,24 @@ editor_options:
   especies <- data_frame(especie, e_ASVs, e_proporcao)
   
   ## Barplots da proporcao de ids
+  
+  print(plot_ids <- grouped_by_ID_especie_tbl %>% 
+          ggplot(aes(x = Especie, y = Proporcao, fill = Peixe)) + 
+          geom_bar(stat = "identity") +
+          geom_text(aes(label = Peixe), ## colocar o valor da proporcao acima das barras
+                    position = position_dodge(width = 0.9),
+                    vjust = -0.1,
+                    colour = "black", size = 6) +
+          guides(col = guide_legend(nrow = 6)) +
+          xlab("Nível taxonômico") + ## alterar o nome do eixo x
+          ylab("Proporção de reads %") + ## alterar o nome do eixo y
+          ggtitle(label = "Proporção de identificações e \n respectivos níveis taxonômicos") + ## alterar o titulo do plot
+          theme_bw(base_size = 16) +
+          scale_fill_manual(values = viridis::viridis(n=4)[c(2,3)]) +
+          guides(fill = guide_legend("Nível")) + ## alterar o titulo da legenda
+          theme(plot.title = element_text(hjust=0.5)))
+  
+    ## Barplots da proporcao de ids
   
   print(plot_ids <- especies %>% 
           ggplot(aes(x = especie, y = e_proporcao, fill = especie)) + 
@@ -1223,7 +1241,7 @@ editor_options:
 {
   ## Calculo dos componentes de Beta diversidade de Jaccard
   {
-    bd_j <- beta.div.comp(spp_sample_tbl_f[,c(5:36)], coef = "J", quant = T)
+    bd_j <- beta.div.comp(spp_sample_tbl_f, coef = "J", quant = T)
     bd_j$part
     bd_j$rich
     
@@ -1231,7 +1249,7 @@ editor_options:
   
   ## Calculo dos componentes de Beta diversidade de Sorensen
   {
-    bd_s <- beta.div.comp(spp_sample_tbl_f[,c(5:36)], coef = "S", quant = T)
+    bd_s <- beta.div.comp(spp_sample_tbl_f, coef = "S", quant = T)
     bd_s$part
     }
 }
@@ -1586,11 +1604,10 @@ editor_options:
   # O unico objetivo e tentar observar padroes em nossos dados!
   {
     # Transformar os dados da comunidade na matriz spp_sample_tbl para entrar no NMDS
-    spp_sample_hel <- decostand(spp_sample_tbl[c,4:35], method = "hellinger")
+    spp_sample_hel <- decostand(spp_sample_tbl_f, method = "hellinger")
     # Criando o NMDS
     nmds1 <- metaMDS(spp_sample_hel, autotransform = FALSE) # Esta dando uma Warning Message. 
-    # stress is (nearly) zero: you may have insufficient data
-    # Isso seria um problema?
+
     # Plotando no vegan
     nmds1_vplot <- ordiplot(nmds1, type = "t") # type = "t" permite ver o nome dos pontos e das especies
     
@@ -1599,38 +1616,40 @@ editor_options:
     
     # Plotando no ggplot
     fort <- fortify(nmds1) # "fortificando" os dados para eles entrarem no ggplot
-    nmds1_ggplot <- ggplot() +
-      geom_point(data = subset(fort, Score == 'sites'), # criacao do scatterplot com os pontos (como visto acima)
-                 mapping = aes(x = NMDS1,
-                               y = NMDS2),
-                 colour = "black",
-                 alpha = 0.5) +
-      geom_segment(data = subset(fort, Score == 'species'), # criacao dos vetores (setas)
-                   mapping = aes(x = 0,
-                                 y = 0,
-                                 xend = NMDS1,
-                                 yend = NMDS2),
-                   arrow = arrow(length = unit(0.015, "npc"),
-                                 type = "closed"),
-                   colour = "darkgrey",
-                   size = 0.8) +
-      geom_text(data = subset(fort, Score == 'species'), # colocando o nome dos pontos e especies 
-                mapping = aes(label = Label, x = NMDS1 * 1.1,
-                              y = NMDS2 * 1.1)) + # multiplicando as coordenadas para afastar os nomes do fim das setas
-      geom_abline(intercept = 0, slope =  0, linetype = "dashed", size = 0.8, colour = "gray") +
-      geom_vline(aes(xintercept = 0), linetype = "dashed", size = 0.8, colour = "gray") +
-      theme(panel.grid.major = element_blank(),
-            panel.grid.minor = element_blank(),
-            panel.background = element_blank(),
-            axis.line = element_line(colour = "black"))
+    
+    print(nmds1_ggplot <- ggplot() +
+            geom_point(data = subset(fort, Score == 'sites'), # criacao do scatterplot com os pontos (como visto acima)
+                       mapping = aes(x = NMDS1,
+                                     y = NMDS2),
+                       colour = "red",
+                       alpha = 0.5) +
+            geom_segment(data = subset(fort, Score == 'species'), # criacao dos vetores (setas)
+                         mapping = aes(x = 0,
+                                       y = 0,
+                                       xend = NMDS1,
+                                       yend = NMDS2),
+                         arrow = arrow(length = unit(0.015, "npc"),
+                                       type = "closed"),
+                         colour = "darkgrey",
+                         size = 0.8) +
+            ggtitle(label = "Lagoa dos Ingleses: Outubro e Novembro 2021") +
+            geom_text(data = subset(fort, Score == 'species'), # colocando o nome dos pontos e especies
+                      mapping = aes(label = Label, x = NMDS1 * 1.1,
+                                    y = NMDS2 * 1.1)) + # multiplicando as coordenadas para afastar os nomes do fim das setas
+            geom_abline(intercept = 0, slope =  0, linetype = "dashed", size = 0.8, colour = "gray") +
+            geom_vline(aes(xintercept = 0), linetype = "dashed", size = 0.8, colour = "gray") +
+            theme(panel.grid.major = element_blank(),
+                  panel.grid.minor = element_blank(),
+                  panel.background = element_blank(),
+                  axis.line = element_line(colour = "black")))
     
     ## Plotando
     ggsave(plot = nmds1_ggplot, filename = "/home/gabriel/projetos/lagoa_ingleses/results/figuras/agosto/NDMS/nmds1_ggplot.pdf",
            device = "pdf", units = "cm", height = 15, width = 20, dpi = 600)
     
     # Plotando no ggord
-    nmds1_ggord <- ggord(nmds1,
-                         grp_in = sort(row.names(spp_sample_tbl)),
+    print(nmds1_ggord <- ggord(nmds1,
+                         grp_in = sort(row.names(spp_sample_tbl_f)),
                          vectyp = "dotted",
                          parse = F,
                          ellipse = F,
@@ -1646,15 +1665,11 @@ editor_options:
                y = c(1),
                label = c(paste0("Stress: ",
                                 format(round(nmds1$stress,4)))),
-               size = 5)
+               size = 5))
     
     ggsave(plot = nmds1_ggord, filename = "/home/gabriel/projetos/lagoa_ingleses/results/figuras/agosto/NDMS/nmds1_ggord.pdf",
            device = "pdf", units = "cm", height = 15, width = 20, dpi = 600)
   }
-  # Minha Versao ----
-  {
-    
-  } 
 }
 # PCA Plots ----
 {
@@ -1675,7 +1690,7 @@ editor_options:
     
     # Autoplot  
     {
-      autoplot(pca1, legend.position = "none") +
+      print(pca1_plot <- autoplot(pca1, legend.position = "none") +
         xlab("PC1") +
         ylab("PC2") +
         geom_abline(intercept = 0, slope = 0, linetype = "dashed", size = 0.3) +
@@ -1683,10 +1698,11 @@ editor_options:
         theme(panel.grid.major = element_blank(),
               panel.grid.minor = element_blank(),
               panel.background = element_blank(),
-              axis.line = element_line(colour = "black", size = 0.3)) 
-      # +
-      #   scale_shape_manual(name = "Expedition",
-      #                      values = spp_sample_tbl_f$Shape)
+              axis.line = element_line(colour = "black", size = 0.3)))
+      
+      ## Plotando
+      ggsave(plot = pca1_plot, filename = "/home/gabriel/projetos/lagoa_ingleses/results/figuras/agosto/NDMS/pca1_plot.pdf",
+             device = "pdf", units = "cm", height = 15, width = 20, dpi = 600)
     }
   }
   }
