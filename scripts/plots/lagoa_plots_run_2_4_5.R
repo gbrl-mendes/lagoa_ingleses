@@ -724,72 +724,70 @@ editor_options:
            device = "pdf", units = "cm", height = 20, width = 30, dpi = 600)
 }
   {# versão EBI
-  tile_EBI <- few_ID_tbl %>%
-      mutate(Expedition = factor(Expedition)) %>% # transformando variaveis categoricas em fatores com niveis
-      mutate(Sample = factor(Sample,
-                             levels = c("L1_nov21",
-                                        "L1_out21",
-                                        "L2_nov21",
-                                        "L2_out21",
-                                        "L3_nov21",
-                                        "L3_out21",
-                                        "L4_nov21",
-                                        "L4_out21",
-                                        "L1-neo-mi",
-                                        "L2 Dez/20",
-                                        "L2 Nov/20"
-                                        ))) %>%
-      mutate(Expedition = factor(Expedition,
-                                 levels = c("Nov_Dec/20",
-                                            "Nov/20",
-                                            "Dec/20",
-                                            "out/21",
-                                            "Nov/21"
+  print(tile_EBI <- few_ID_tbl %>%
+          mutate(Expedition = factor(Expedition)) %>% # transformando variaveis categoricas em fatores com niveis
+          mutate(Sample = factor(Sample,
+                                 levels = c("L1_nov21",
+                                            "L1_out21",
+                                            "L2_nov21",
+                                            "L2_out21",
+                                            "L3_nov21",
+                                            "L3_out21",
+                                            "L4_nov21",
+                                            "L4_out21",
+                                            "L1-neo-mi",
+                                            "L2 Dez/20",
+                                            "L2 Nov/20"
                                             ))) %>%
-      mutate(Point = factor(Point)) %>%
-      mutate(File_name = factor(File_name)) %>%
-      mutate(Expedition = factor(Expedition)) %>%
-      filter(!is.na(`Curated ID`)) %>%   # retirar os NA
-      filter(Expedition %in% c("out/21", # deixando apenas as amostras de 2021
-                               "Nov/21")) %>%
-      filter(!`Curated ID` %in% c("Cavia magna", # Bela pediu para retirar essas especies
-                                 "Bos taurus",
-                                 "Canis familiaris",
-                                 "Didelphis albiventris (Gamba)",
-                                 "Homo sapiens",
-                                 "Hydrochaeris hydrochaeris (Capivara)",
-                                 "Nannopterum brasilianus",
-                                 "Oryctolagus cuniculus (Coelho-bravo)",
-                                 "Progne chalybea (Andorinha-grande)",
-                                 "Sus scrofa")) %>% 
-      
-    ### Tile plot
-      ggplot(aes(y = `Curated ID`, 
-               # x = Point,
-               x = Expedition,
-               fill = RRA
-               )) +
-        geom_tile() +
-        facet_grid(~Point, # facetando por ponto
-                   scales = "free_x",
-                   space = "free_x") +
-        labs(fill ='Abundância \nrelativa (%)',
-             x = "Amostras",
-             y= "Espécies") +
-        ggtitle(label = "Espécies identificadas em cada ponto") +
-        #geom_hline(yintercept = c(8.5)) + # linha que separa as especies de peixes e nao-peixes
-        scale_fill_continuous(
+          mutate(Expedition = factor(Expedition,
+                                     levels = c("Nov_Dec/20",
+                                                "Nov/20",
+                                                "Dec/20",
+                                                "out/21",
+                                                "Nov/21"
+                                                ))) %>%
+          mutate(Point = factor(Point)) %>%
+          mutate(File_name = factor(File_name)) %>%
+          mutate(Expedition = factor(Expedition)) %>%
+          filter(!is.na(`Curated ID`)) %>%   # retirar os NA
+          filter(Expedition %in% c("out/21", # deixando apenas as amostras de 2021
+                                   "Nov/21")) %>%
+          filter(!`Curated ID` %in% c("Cavia magna", # Bela pediu para retirar essas especies
+                                      "Bos taurus",
+                                      "Canis familiaris",
+                                      "Didelphis albiventris (Gamba)",
+                                      "Homo sapiens",
+                                      "Hydrochaeris hydrochaeris (Capivara)",
+                                      "Nannopterum brasilianus",
+                                      "Oryctolagus cuniculus (Coelho-bravo)",
+                                      "Progne chalybea (Andorinha-grande)",
+                                      "Sus scrofa")) %>%
+          ### Tile plot
+          ggplot(aes(y = `Curated ID`,
+                     # x = Point,
+                     x = Expedition,
+                     fill = RRA
+                     )) +
+          geom_tile() +
+          facet_grid(~Point, # facetando por ponto
+                     scales = "free_x",
+                     space = "free_x") +
+          labs(fill ='Abundância \nrelativa (%)',
+               x = "Amostras",
+               y= "Espécies") +
+          ggtitle(label = "Espécies identificadas em cada ponto") +
+          #geom_hline(yintercept = c(8.5)) + # linha que separa as especies de peixes e nao-peixes
+          scale_fill_continuous(
           trans = "log10", # exibir a abundancia em escala logaritmica para favorecer a exibicao de baixo RRA
           breaks = c(0.001, 0.01, 0.1, 1, 10, 75), # definindo os valores que aparecem na escala
           type = "viridis") +
-        theme(text=element_text(size = 10, face = "bold")) +
-        guides(col = guide_legend(nrow = 6)) +
-        theme_bw(base_size = 16) +
-        theme(plot.title = element_text(hjust = 0.5))
-  
+          theme(text=element_text(size = 10, face = "bold")) +
+          guides(col = guide_legend(nrow = 6)) +
+          theme_bw(base_size = 16) +
+          theme(plot.title = element_text(hjust = 0.5)))
     ## Plotando
-      ggsave(plot = tile_EBI, filename = "/home/gabriel/projetos/lagoa_ingleses/results/figuras/agosto/tile_plots/tile_EBI.pdf",
-             device = "pdf", units = "cm", height = 20, width = 30, dpi = 600)
+    ggsave(plot = tile_EBI, filename = "/home/gabriel/projetos/lagoa_ingleses/results/figuras/agosto/tile_plots/tile_EBI.pdf",
+           device = "pdf", units = "cm", height = 20, width = 30, dpi = 600)
 }
 
   ## Title plot exibindo todas as ids
@@ -1605,9 +1603,10 @@ editor_options:
   {
     # Transformar os dados da comunidade na matriz spp_sample_tbl para entrar no NMDS
     spp_sample_hel <- decostand(spp_sample_tbl_f, method = "hellinger")
+    
     # Criando o NMDS
-    nmds1 <- metaMDS(spp_sample_hel, autotransform = FALSE) # Esta dando uma Warning Message. 
-
+    nmds1 <- metaMDS(spp_sample_hel, autotransform = FALSE) 
+    
     # Plotando no vegan
     nmds1_vplot <- ordiplot(nmds1, type = "t") # type = "t" permite ver o nome dos pontos e das especies
     
