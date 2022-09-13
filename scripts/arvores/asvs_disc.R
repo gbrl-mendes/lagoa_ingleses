@@ -1,5 +1,3 @@
----
-
 ## Construcao de Arvores
   
 ## Pacotes  
@@ -10,14 +8,42 @@
   library(stringr)
   library(ggtree)
   library(RColorBrewer)
+  
 }
-----
 
 ## Arvore ASVs ----
 
+# Sequencias da tabela usada nos plots
+asvs_tbl <- read.csv(file = "/home/gabriel/projetos/lagoa_ingleses/tabelas/raw/arvore/ASVs_seqs.csv", sep = ";")
+
+# Criando a coluna cabec unindo o nome das ASVs com o nome das especies
+asvs_tbl <- asvs_tbl %>% 
+  as_tibble() %>%
+  select(inicio, especie, seq) %>% 
+  mutate(cabec = paste0(inicio, "|", especie))
+
+# Deixando apenas o nome do cabecalho e as sequencias e reordenando
+asvs_tbl <- asvs_tbl[,c(4,3)]
+
+# Criando funcao para transformar a tabela em FASTA
+{writeFasta <- function(data, filename){
+  fastaLines = c()
+  for (rowNum in 1:nrow(data)){
+    fastaLines = c(fastaLines, as.character(paste(data[rowNum,"cabec"], sep = "")))
+    fastaLines = c(fastaLines,as.character(data[rowNum,"seq"]))
+  }
+  fileConn<-file(filename)
+  writeLines(fastaLines, fileConn)
+  close(fileConn)
+}}
+
+# Criando o FASTA apartir da tabela
+writeFasta(asvs_tbl, "/home/gabriel/projetos/lagoa_ingleses/tabelas/raw/arvore/asvs.fasta")
+
 # Input ASVs
 asvs_fasta <- readDNAStringSet(
-  filepath = "/home/gabriel/projetos/peixes-eDNA/analises/pipeline-modelo/results/pipeline-modelo-all_ASVs_all_primers.fasta") %>%
+  # filepath = "/home/gabriel/projetos/peixes-eDNA/analises/pipeline-modelo/results/pipeline-modelo-all_ASVs_all_primers.fasta") %>%
+  filepath = "/home/gabriel/projetos/lagoa_ingleses/tabelas/raw/arvore/asvs.fasta") %>%
   RemoveGaps()
 
 BrowseSeqs(asvs_fasta)
@@ -29,93 +55,62 @@ asvs_align <- AlignSeqs(myXStringSet = asvs_fasta,
                         verbose = TRUE)
 BrowseSeqs(asvs_align)
 
-# Filtrando ASVs muito diferentes
+# Salvando o alinhamento
+writeXStringSet(x = asvs_align,
+                file = "~/projetos/lagoa_ingleses/results/tree/setembro/asvs_align.fasta")
 
-asvs_to_remove <- c("ASV_11_195bp_merged|Cichlidae|NA|NA|Cichlidae",
-                    "ASV_204_85bp_merged|NA|NA|NA|NA",
-                    "ASV_201_93bp_merged|NA|NA|NA|NA",
-                    "ASV_209_81bp_merged|NA|NA|NA|NA",
-                    "ASV_208_81bp_merged|NA|NA|NA|NA",
-                    "ASV_210_76bp_merged|NA|NA|NA|NA",
-                    "ASV_203_86bp_merged|NA|NA|NA|NA",
-                    "ASV_200_122bp_merged|NA|NA|NA|NA",
-                    "ASV_202_92bp_merged|NA|NA|NA|NA",
-                    "ASV_193_153bp_merged|Characidae|NA|NA|Characidae",
-                    "ASV_191_159bp_merged|NA|NA|NA|NA",
-                    "ASV_188_164bp_merged|NA|NA|NA|NA",
-                    "ASV_189_164bp_merged|NA|NA|NA|NA",
-                    "ASV_24_191bp_merged|NA|NA|NA|NA",
-                    "ASV_31_178bp_merged|NA|NA|NA|NA",
-                    "ASV_197_138bp_merged|NA|NA|NA|NA",
-                    "ASV_13_194bp_merged|Characidae|Moenkhausia|Moenkhausia costae|Moenkhausia costae",
-                    "ASV_14_194bp_merged|Erythrinidae|Hoplias|Hoplias malabaricus|Hoplias malabaricus/sp",
-                    "ASV_15_194bp_merged|Erythrinidae|Hoplias|NA|Hoplias brasiliensis/intermedius",
-                    "ASV_10_195bp_merged|Pimelodidae|Rhamdia|Rhamdia quelen|Rhamdia quelen",
-                    "ASV_23_192bp_merged|Cichlidae|Oreochromis|Oreochromis niloticus|NA niloticus/rendalli",
-                    "ASV_4_201bp_merged|NA|NA|NA|NA",
-                    "ASV_16_193bp_merged|NA|NA|NA|NA",
-                    "ASV_88_169bp_merged|NA|NA|NA|NA",
-                    "ASV_211_65bp_merged|NA|NA|NA|NA",
-                    "ASV_198_135bp_merged|NA|NA|NA|NA",
-                    "ASV_199_130bp_merged|NA|NA|NA|NA",
-                    "ASV_195_145bp_merged|NA|NA|NA|NA",
-                    "ASV_17_193bp_merged|NA|NA|NA|NA",
-                    "ASV_27_182bp_merged|NA|NA|NA|NA",
-                    "ASV_207_83bp_merged|Loricariidae|Harttia|NA|Harttia",
-                    "ASV_206_83bp_merged|NA|NA|NA|NA",
-                    "ASV_194_146bp_merged|NA|NA|NA|NA",
-                    "ASV_205_83bp_merged|NA|NA|NA|NA",
-                    "ASV_1_211bp_merged|NA|NA|NA|NA",
-                    "ASV_2_208bp_merged|NA|NA|NA|NA",
-                    "ASV_79_170bp_merged|NA|NA|NA|Hydrochaeris hydrochaeris isol",
-                    "ASV_95_169bp_merged|Hominidae|Homo|Homo sapiens|Homo sapiens",
-                    "ASV_70_171bp_merged|Hominidae|Homo|Homo sapiens|Homo sapiens",
-                    "ASV_87_169bp_merged|Canidae|Canis|Canis familiaris|Canis familiaris",
-                    "ASV_89_169bp_merged|Canidae|Canis|Canis familiaris|Canis familiaris",
-                    "ASV_71_171bp_merged|NA|NA|NA|Oryctolagus cuniculus mitochon",
-                    "ASV_80_170bp_merged|Bovidae|Bos|Bos taurus|Bos taurus",
-                    "ASV_78_170bp_merged|NA|NA|NA|Sus scrofa isolate Europe hapl",
-                    "ASV_106_169bp_merged|NA|NA|NA|Sus scrofa breed Andaman Desi ",
-                    "ASV_76_170bp_merged|NA|NA|NA|Didelphis albiventris mitochon",
-                    "ASV_182_167bp_merged|NA|NA|NA|Cavia magna 12S ribosomal RNA ",
-                    "ASV_61_172bp_merged|Hominidae|Homo|Homo sapiens|Homo sapiens",
-                    "ASV_73_171bp_merged|Hominidae|Homo|Homo sapiens|Homo sapiens",
-                    "ASV_72_171bp_merged|Hominidae|Homo|Homo sapiens|Homo sapiens",
-                    "ASV_190_160bp_merged|Hominidae|Homo|Homo sapiens|Homo sapiens",
-                    "ASV_99_169bp_merged|NA|NA|NA|NA",
-                    "ASV_96_169bp_merged|NA|NA|NA|Hydrochaeris hydrochaeris isol",
-                    "ASV_105_169bp_merged|NA|NA|NA|Hydrochaeris hydrochaeris isol",
-                    "ASV_108_169bp_merged|NA|NA|NA|Hydrochaeris hydrochaeris isol",
-                    "ASV_101_169bp_merged|NA|NA|NA|NA",
-                    "ASV_93_169bp_merged|NA|NA|NA|NA",
-                    "ASV_91_169bp_merged|NA|NA|NA|NA",
-                    "ASV_92_169bp_merged|NA|NA|NA|NA",
-                    "ASV_122_168bp_merged|Bovidae|Bos|Bos taurus|Bos taurus",
-                    "ASV_111_168bp_merged|Bovidae|Bos|Bos taurus|Bos taurus",
-                    "ASV_112_168bp_merged|Bovidae|Bos|Bos taurus|Bos taurus",
-                    "ASV_123_168bp_merged|Bovidae|Bos|Bos taurus|Bos taurus",
-                    "ASV_120_168bp_merged|Bovidae|Bos|Bos taurus|Bos taurus",
-                    "ASV_132_168bp_merged|Bovidae|Bos|Bos taurus|Bos taurus",
-                    "ASV_119_168bp_merged|Bovidae|Bos|Bos taurus|Bos taurus",
-                    "ASV_116_168bp_merged|Bovidae|Bos|Bos taurus|Bos taurus",
-                    "ASV_118_168bp_merged|Bovidae|Bos|Bos taurus|Bos taurus",
-                    "ASV_192_158bp_merged|NA|NA|NA|Human DNA sequence from clone ",
-                    "ASV_28_181bp_merged|NA|NA|NA|Progne chalybea mitochondrion,",
-                    "ASV_29_180bp_merged|NA|NA|NA|Nannopterum brasilianus mitoch")
+# Calculo da matriz de distancia
+asvs_dist <- DistanceMatrix(myXStringSet = asvs_align,
+                            includeTerminalGaps = FALSE,
+                            correction = "Jukes-Cantor",
+                            processors = 20,
+                            verbose = TRUE)
 
-asvs_fil <- asvs_fasta[!(names(asvs_fasta) %in% asvs_to_remove)] #removendo as ASVs que estão na lista asvs_to_remove
+# Construcao do HeatMap
 
-# Verificar quais sequências foram filtradas
-names(asvs_fasta[!(names(asvs_fasta) %in% names(asvs_fil))])
+## Neste caso o uso do heatmap e' mais ludico. Quando foram utilizadas todas ASVs para construcao da arvore, 
+## haviam sequencias tao distoantes que entre elas havia uma distancia infinita na matriz.
+## O heatmap no momento entao serviu para rastrear quais eram essas sequencias e retira-las manualmente.
+## E' bom manter esse trecho de codigo caso seja necessario no futuro.
 
-# Verificar as as ASVs que sobraram mas não estão na lista de seqs para filtrar
-filtrado[!filtrado %in% asvs_to_remove] #este resultado possui apenas as sequências externas, ja que elas foram retiradas com o str_detect
+pheatmap::pheatmap(asvs_dist,
+                   fontsize = 2,
+                   col = brewer.pal(n = 9,name = "YlOrRd"),
+                   treeheight_col = 0,
+                   filename = "/home/gabriel/projetos/lagoa_ingleses/results/tree/setembro/heatmap_dist.pdf", ## avaliar quais ASVs estao sendo outliers abrindo o pdf e olhando seus nomes
+                   width = 8,
+                   height = 8
+)
 
-# Verificar quais nomes estão na lista de seqs para filtrar mas não foram filtradas
-asvs_to_remove[!asvs_to_remove %in% filtrado]
+# Construcao da arvore
 
-BrowseSeqs(dna_fasta_or)
-BrowseSeqs(dna_fasta_fil)
+asvs_tree <- ape::njs(asvs_dist)
+
+# Plotando
+
+print(asvs_tree_plot <- ggtree(tr = asvs_tree) +
+        theme_tree2() +
+        geom_tiplab(offset = 0,  
+                    align = T) +
+        xlim(0, 2)
+)
+
+# Salvando a figura em pdf
+
+asvs_tree_plot %>% ggsave(filename = "/home/gabriel/projetos/lagoa_ingleses/results/tree/setembro/asvs_tree.pdf", 
+                          device = "pdf", 
+                          width = 24,
+                          height = 24,
+                          dpi = 600)
+
+# Salvando a arvore em NWK
+ape::write.tree(phy = asvs_tree,
+                file = "~/projetos/lagoa_ingleses/tree/asvs_tree.nwk")
+
+# Extraindo as IDs
+
+asvs_ids <- get_taxa_name(asvs_tree_plot) %>% rev()
+
 
 # Arvore ASVs + LGC12sDB ----  
 ## Lendo Fasta DB
