@@ -1717,13 +1717,21 @@ editor_options:
     barragem_2 <- c(-20.177738135335836, -43.94299842263384)
     prainha_1 <- c(-20.17910770033768, -43.95947791566818)
     pontos <- data.frame(prainha_1, barragem_2, ponte_3, fundacao_4)
-    }
-      
-  
-  
-  
-  
-  
+  }
+    
+
+
+
+
+
+
+
+
+
+
+
+
+
   
   
   

@@ -11,16 +11,55 @@
   
 }
 
+# Obtencao dos dados ----
+{
+  raw_results_tbl <- read.csv(paste0(tbl_path,"/","run_2_4_5_lagoa_ingleses_v2.csv"), sep = ",", check.names = FALSE) %>% tibble()
+  raw_results_tbl$`Curated ID`[raw_results_tbl$`Curated ID` %in% c("Oreochromis niloticus")] <- "Tilapia rendalli" # Oreochromis niloticus é Tilapia
+}
+
 ## Arvore ASVs ----
 
 # Sequencias da tabela usada nos plots
-asvs_tbl <- read.csv(file = "/home/gabriel/projetos/lagoa_ingleses/tabelas/raw/arvore/ASVs_seqs.csv", sep = ";")
+# asvs_tbl <- read.csv(file = "/home/gabriel/projetos/lagoa_ingleses/tabelas/raw/arvore/ASVs_seqs.csv", sep = ";") # nao irei utilizar mais todas as seqs, apenas as maiores
 
+bigger_seqs <-raw_results_tbl %>% 
+  select(`Curated ID`,
+         `ASV header`,
+         `ASV (Sequence)`,
+         Expedition) %>% 
+  filter(!`Curated ID` %in% c("Actinopteri", ## tirando as ASVs que nao foram identificadas a nivel de especie, nao-peixes e NA
+                              "Astyanax",
+                              "Characidae",
+                              "Characidium",
+                              "Characiformes",
+                              "Cichla",
+                              "Cichlidae",
+                              "Hoplias",
+                              "Pimelodus",
+                              "",
+                              "Cavia magna",
+                              "Cutibacterium acnes",
+                              "Bos taurus",
+                              "Canis familiaris",
+                              "Didelphis albiventris (Gamba)",
+                              "Homo sapiens",
+                              "Hydrochaeris hydrochaeris (Capivara)",
+                              "Nannopterum brasilianus",
+                              "Oryctolagus cuniculus (Coelho-bravo)",
+                              "Progne chalybea (Andorinha-grande)",
+                              "Sus scrofa")) %>%
+  filter(Expedition %in% c("out/21", # deixando apenas as amostras de 2021
+                           "Nov/21")) %>% 
+  group_by(`Curated ID`) %>% 
+  slice(which.max(nchar(`ASV (Sequence)`)))
+  
 # Criando a coluna cabec unindo o nome das ASVs com o nome das especies
-asvs_tbl <- asvs_tbl %>% 
+asvs_tbl <- bigger_seqs %>% 
   as_tibble() %>%
-  select(inicio, especie, seq) %>% 
-  mutate(cabec = paste0(inicio, "|", especie))
+  select(`ASV header`, 
+         `Curated ID`,
+         `ASV (Sequence)`) %>% 
+  mutate(cabecalho = paste0(`ASV header`, "|", `Curated ID`))
 
 # Deixando apenas o nome do cabecalho e as sequencias e reordenando
 asvs_tbl <- asvs_tbl[,c(4,3)]
@@ -29,8 +68,8 @@ asvs_tbl <- asvs_tbl[,c(4,3)]
 {writeFasta <- function(data, filename){
   fastaLines = c()
   for (rowNum in 1:nrow(data)){
-    fastaLines = c(fastaLines, as.character(paste(data[rowNum,"cabec"], sep = "")))
-    fastaLines = c(fastaLines,as.character(data[rowNum,"seq"]))
+    fastaLines = c(fastaLines, as.character(paste(data[rowNum,"cabecalho"], sep = "")))
+    fastaLines = c(fastaLines,as.character(data[rowNum,"ASV (Sequence)"]))
   }
   fileConn<-file(filename)
   writeLines(fastaLines, fileConn)
