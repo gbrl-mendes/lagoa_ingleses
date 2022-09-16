@@ -183,20 +183,7 @@ editor_options:
   
   # deletando Curated ID
   spp_sample_tbl_f <- spp_sample_tbl_f %>% select(-c(`Curated ID`))
-  
-  ## incluindo a coluna de forma para fazer o plot
-  # spp_sample_tbl_f <- spp_sample_tbl_f %>%  mutate("Shape" = if_else(Expedition %in% c("out/21"), 1, 2)) %>%
-  #   relocate("Shape") # passar a coluna para o começo
-  
-  ## nomes das amostras como row names
-  # row.names(spp_sample_tbl_f) <- spp_sample_tbl_f$Sample 
-  
-  ## retirando a coluna Samples
-  # spp_sample_tbl_f <- spp_sample_tbl_f %>% select(-c(Sample)) 
-  
-    ## Substituir o espaco no nome das especies por _
-  # colnames(spp_sample_tbl_f) <- colnames(spp_sample_tbl_f) %>%  
-  #  str_replace_all(pattern = " ",replacement = "_")
+
 }
 
 ## Tabela todas Ids a nível de especie
@@ -1263,33 +1250,13 @@ editor_options:
       grouped_by_ID_NMDS <- raw_results_NMDS %>%
         select(c(
           "Sample",
-          # "Run",
-          # "Group",
           "Expedition",
-          # "Coleta",
           "Year",
           "Sample.Name",
           "File_name",
-          # "OTU",
-          # "Read_origin",
           "Curated ID",
-          # "final ID",
-          # "Abundance",
-          # "Relative abundance to all samples",
           "Relative abundance on sample",
-          # "Sample.total.abundance",
-          # "Type",
-          "Point", # "Sub.point", # "Depth", # "Num.replicates", # "Obs", # "Primer", # "Quantidade.de.ovos.ou.larvas", 
-          # "Kingdom", # "Phylum", # "Class", # "Order", # "Family", # "Genus", # "Species", # "Specimen", # "Basin", 
-          # "exact.Genus", # "exact.Species", # "exact.GenSp", # "X1_subject.header", # "X1_subject", # "X1_indentity", 
-          # "X1_length", # "X1_mismatches", # "X1_gaps", # "X1_query.start", # "X1_query.end", # "X1_subject.start", 
-          # "X1_subject.end", # "X1_e.value", # "X1_bitscore", # "X1_qcovhsp", # "X2_subject.header", # "X2_subject", 
-          # "X2_indentity", # "X2_length", # "X2_mismatches", # "X2_gaps", # "X2_query.start", # "X2_query.end", 
-          # "X2_subject.start", # "X2_subject.end", # "X2_e.value", # "X2_bitscore", # "X2_qcovhsp", # "X3_subject.header", 
-          # "X3_subject", # "X3_indentity", # "X3_length", # "X3_mismatches", # "X3_gaps", # "X3_query.start", 
-          # "X3_query.end", # "X3_subject.start", # "X3_subject.end", # "X3_e.value", # "X3_bitscore", # "X3_qcovhsp", 
-          # "Tag.pairs", # "Tag.FWD", # "Tag.REV", # "Control", # "Size..pb.", # "ASV.header", # "ASV..Sequence.", 
-          # "Remove", # "Probable.bacteria", # "Abd..higher.than.in.control"
+          "Point",
         )) %>% 
         group_by(Sample, `Curated ID`,  Expedition, Point, Sample.Name, File_name) %>% 
         summarize(`Sample` = unique(Sample),
@@ -1594,6 +1561,14 @@ editor_options:
     
     # Plotando no vegan
     nmds1_vplot <- ordiplot(nmds1, type = "t") # type = "t" permite ver o nome dos pontos e das especies
+    
+    # Tentando mostrar o envelop
+    
+    nmds1_vplot2 <- ordiplot(nmds1, type = "t")
+    points (nmds1, col = spp_sample_tbl_f$L1_nov21, pch = spp_sample_tbl_f$L1_nov21)
+    for (i in seq (1, 4)) ordihull (nmds1, groups = spp_sample_tbl_f$L1_nov21, show.groups = i, col = i, lty = 'dotted')
+    
+    ### Deu tudo errado ^
     
     # Plotando no ggvegan
     nmds1_gvplot <- autoplot(nmds1) # ainda nao e um plot ideal. Os proximos passos vao deixar o plot mais publicavel
