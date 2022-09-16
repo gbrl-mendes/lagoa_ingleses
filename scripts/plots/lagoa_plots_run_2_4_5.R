@@ -587,58 +587,43 @@ editor_options:
                                    ))))
     }
   
-  ### Sem os grupos
+  ### Sem os grupos alterado
   {
     few_ID_tbl <- grouped_by_ID_tbl %>% #ids apenas ao nivel de especie e sem a bacteria
       mutate(`Curated ID` = factor(`Curated ID`,
                                    levels = rev(c(
-                                     #"",
-                                     #"Actinopteri",
-                                     "Acinocheirodon melanogramma",
-                                     #"Astyanax",
-                                     "Astyanax fasciatus",
-                                     "Astyanax lacustris",
-                                     "Brycon orthotaenia",
-                                     "Bryconamericus stramineus",
-                                     #"Characidae",
-                                     #"Characidium",
-                                     #"Characiformes",
-                                     #"Cichla",
-                                     #"Cichlidae",
-                                     "Colossoma macropomum",
-                                     "Coptodon zillii",
-                                     "Eigenmannia virescens",
-                                     "Gymnotus carapo",
-                                     "Hemigrammus gracilis",
-                                     "Hemigrammus marginatus",
-                                     #"Hoplias",
                                      "Hoplias intermedius",
                                      "Hoplias malabaricus",
-                                     "Hypomasticus steindachneri",
+                                     "Gymnotus carapo",
+                                     "Salmo salar",
+                                     "Acinocheirodon melanogramma",
+                                     "Tilapia rendalli",
+                                     "Brycon orthotaenia",
+                                     "Prochilodus costatus",
+                                     "Serrasalmus brandtii",
+                                     "Megaleporinus garmani",
                                      "Leporellus vittatus",
                                      "Leporinus piau",
-                                     "Leporinus reinhardti",
-                                     "Leporinus taeniatus",
-                                     "Megaleporinus elongatus",
-                                     "Megaleporinus garmani",
-                                     "Moenkhausia costae",
-                                     "Myleus micans",
-                                     "Oreochromis niloticus",
-                                     "Orthospinus franciscensis",
-                                     #"Pimelodus",
+                                     "Hemigrammus gracilis",
+                                     "Hemigrammus marginatus",
+                                     "Astyanax fasciatus",
+                                     "Astyanax lacustris",
+                                     "Wertheimeria maculata",
                                      "Pimelodus fur",
+                                     "Rhamdia quelen",
+                                     "Planaltina myersi",
+                                     "Bryconamericus stramineus",
+                                     "Pseudoplatystoma corruscans",
                                      "Pimelodus maculatus",
                                      "Pimelodus pohli",
-                                     "Planaltina myersi",
-                                     "Poecilia reticulata",
-                                     "Prochilodus costatus",
-                                     "Pseudoplatystoma corruscans",
+                                     "Leporinus taeniatus",
+                                     "Leporinus reinhardti",
+                                     "Eigenmannia virescens",      
+                                     "Colossoma macropomum",
+                                     "Myleus micans",
                                      "Pygocentrus piraya",
-                                     "Rhamdia quelen",
-                                     "Salmo salar",
-                                     "Serrasalmus brandtii",
-                                     "Tilapia rendalli",
-                                     "Wertheimeria maculata",
+                                     "Orthospinus franciscensis",
+                                     "Poecilia reticulata",
                                      #nao-peixes
                                      "Cavia magna",
                                      #"Cutibacterium acnes",
@@ -720,7 +705,7 @@ editor_options:
       theme(plot.title = element_text(hjust = 0.5))
       
       ## Plotando
-      ggsave(plot = tile_ponto_few, filename = "/home/gabriel/projetos/lagoa_ingleses/results/figuras/agosto/tile_plots/tile_ponto_few.pdf",
+      ggsave(plot = tile_ponto_few, filename = "/home/gabriel/projetos/lagoa_ingleses/results/figuras/setembro/tile_plots/tile_ponto_few.pdf",
            device = "pdf", units = "cm", height = 20, width = 30, dpi = 600)
 }
   {# versão EBI
@@ -786,7 +771,7 @@ editor_options:
           theme_bw(base_size = 16) +
           theme(plot.title = element_text(hjust = 0.5)))
     ## Plotando
-    ggsave(plot = tile_EBI, filename = "/home/gabriel/projetos/lagoa_ingleses/results/figuras/agosto/tile_plots/tile_EBI.pdf",
+    ggsave(plot = tile_EBI, filename = "/home/gabriel/projetos/lagoa_ingleses/results/figuras/setembro/tile_plots/tile_EBI.pdf",
            device = "pdf", units = "cm", height = 20, width = 30, dpi = 600)
 }
 
@@ -908,7 +893,7 @@ editor_options:
       theme(plot.title = element_text(hjust = 0.5))
     
     ## Plotando
-    ggsave(plot = tile_ano_few, filename = "/home/gabriel/projetos/lagoa_ingleses/results/figuras/agosto/tile_plots/tile_ano_few.pdf",
+    ggsave(plot = tile_ano_few, filename = "/home/gabriel/projetos/lagoa_ingleses/results/figuras/setembro/tile_plots/tile_ano_few.pdf",
            device = "pdf", units = "cm", height = 25, width = 20, dpi = 600)
     }
 

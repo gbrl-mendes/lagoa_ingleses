@@ -1,5 +1,6 @@
-
----- ## Escolhendo as maiores seqs entre as ASVs de cada espécie ## ----
+"Escolhendo as maiores seqs entre as ASVs de cada espécie"
+"Mendes, GA; Hilário, OH"
+"09/2022"
 
 # Carregando bibliotecas ----
 {
@@ -58,6 +59,7 @@ bigger_seqs <- raw_results_tbl %>%
   group_by(`Curated ID`) %>% 
   slice(which.max(nchar(`ASV (Sequence)`)))
 
+view(bigger_seqs)
   
   
 
