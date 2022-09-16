@@ -4,3 +4,11 @@ temos 40 espécies sendo 32 espécies de peixes.
 Das espécies de peixes, tempos 279 ASVs. As outras espécies correspondem a 51 ASVs.
 No total foram avaliadas 8 amostras distintas, correspondentes aos 4 pontos da lagoa dos ingleses nos meses de outubro e novembro.
 
+#Infos levantadas com o script estatiscas.r:
+ASVs por amostra: média: 34.875 SD: 16.39
+ASVs por ponto: média 69.75 SD: 5.5
+ASVs por expedição (mês de coleta): média: 139.5 SD: 4.94
+
+Espécies por amostra: média: 11.875 SD: 5.488625
+Espécies por ponto: média: 23.75 SD: 6.130525
+Espécies por exepdição (mês de coleta): média 47.5 SD: 7.778175
