@@ -12,3 +12,13 @@ ASVs por expedição (mês de coleta): média: 139.5 SD: 4.94
 Espécies por amostra: média: 11.875 SD: 5.488625
 Espécies por ponto: média: 23.75 SD: 6.130525
 Espécies por exepdição (mês de coleta): média 47.5 SD: 7.778175
+
+#Utilizando a ferramenta de medição do ANA (Agencia Nacional de Aguas) Hidroweb v3.2.7 foi calculado que a área de superfície da Lagoa dos Ingleses é de  ~1.7km² (417,2 Acres; ~1.688m²)
+
+#Utilizando o GMaps para calcular as distâncias entre os pontos
+- L1-L2: ~2.25km
+- L2-L3: ~1.8km
+- L3-L4: ~3.10km
+- L4-L1: ~2.80km
+
+Média de 2.5km (2.4875km) de distância entre cada ponto.

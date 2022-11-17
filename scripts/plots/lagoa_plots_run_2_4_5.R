@@ -101,28 +101,28 @@ editor_options:
 # Para realizar as analises que envolvam apenas as abundancias das especies,
 # usar as colunas de 4 a 35 c[,4:35]
 
-## Tabela só peixes
+## Tabela só peixes 
 {
   spp_sample_tbl_f <- raw_results_tbl %>%
     select(c(
       "Sample",
-             # "Run",
-             # "Group",
-             "Expedition",
-             # "Coleta",
-             "Year",
-             #"Sample.Name",
-             #"File_name",
-             # "OTU",
-             # "Read_origin",
-             "Curated ID",
-             # "final ID",
-             # "Abundance",
-             # "Relative abundance to all samples",
-             "Relative abundance on sample",
-             # "Sample.total.abundance",
-             # "Type",
-             "Point")) %>%
+      # "Run",
+      # "Group",
+      "Expedition",
+      # "Coleta",
+      "Year",
+      #"Sample.Name",
+      #"File_name",
+      # "OTU",
+      # "Read_origin",
+      "Curated ID",
+      # "final ID",
+      # "Abundance",
+      # "Relative abundance to all samples",
+      "Relative abundance on sample",
+      # "Sample.total.abundance",
+      # "Type",
+      "Point")) %>%
     filter(!`Curated ID` %in% c("Actinopteri", ## tirando as ASVs que nao foram identificadas a nivel de especie, nao-peixes e NA
                                 "Astyanax",
                                 "Characidae",
@@ -149,9 +149,9 @@ editor_options:
                           "L2_nov20")
            ) %>%
     group_by(Sample,
-             #Expedition,
-             #Point,
-             #Year,
+             Expedition,
+             Point,
+             Year,
              `Curated ID`
              ) %>%
     summarize(`ID Abundance on sample (%)` = sum(`Relative abundance on sample`)
@@ -165,10 +165,10 @@ editor_options:
                                               "L4_out21",
                                               "L4_nov21"
                                               ))) %>%
-    # pivot_wider(names_from = `Curated ID`,
-    #               values_from = `ID Abundance on sample (%)`) %>%
-    pivot_wider(names_from = Sample, 
-                values_from = `ID Abundance on sample (%)`) %>% 
+    pivot_wider(names_from = `Curated ID`, ## especies nas colunas, samples nas linhas
+                  values_from = `ID Abundance on sample (%)`) %>%
+    # pivot_wider(names_from = Sample, ## especies nas linhas, samples nas colunas
+                # values_from = `ID Abundance on sample (%)`) %>% 
     ungroup() %>%
     unique()
   
@@ -178,11 +178,17 @@ editor_options:
   ## transformando a tabela em um data frame
   spp_sample_tbl_f <- as.data.frame(spp_sample_tbl_f) 
   
+  # Sample como row.names
+  row.names(spp_sample_tbl_f) <- spp_sample_tbl_f$Sample
+  
   # Curated IDs como row.names
-  row.names(spp_sample_tbl_f) <- spp_sample_tbl_f$`Curated ID`
+  # row.names(spp_sample_tbl_f) <- spp_sample_tbl_f$`Curated ID`
+  
+  # deletando Sample
+  spp_sample_tbl_f <- spp_sample_tbl_f %>% select(-c(Sample))
   
   # deletando Curated ID
-  spp_sample_tbl_f <- spp_sample_tbl_f %>% select(-c(`Curated ID`))
+  # spp_sample_tbl_f <- spp_sample_tbl_f %>% select(-c(`Curated ID`))
 
 }
 
@@ -220,10 +226,10 @@ editor_options:
                                 "",
                                 "Cutibacterium acnes"
     )) %>%
-    filter(!Sample %in% c("LI1-neo-mi",
-                          "L2_dez20",
-                          "L2_nov20")
-    ) %>% 
+    # filter(!Sample %in% c("LI1-neo-mi",
+    #                       "L2_dez20",
+    #                       "L2_nov20")
+    # ) %>% 
     group_by(Sample,
              #Expedition,
              #Point,
@@ -232,7 +238,10 @@ editor_options:
     ) %>%
     summarize(`ID Abundance on sample (%)` = sum(`Relative abundance on sample`)
     ) %>%
-    mutate(Sample = factor(Sample, levels = c("L1_out21",
+    mutate(Sample = factor(Sample, levels = c("LI1-neo-mi",
+                                              "L2_dez20",
+                                              "L2_nov20",
+                                              "L1_out21",
                                               "L1_nov21",
                                               "L2_out21",
                                               "L2_nov21",
@@ -355,6 +364,7 @@ editor_options:
       "Abundance",
       "Sample total abundance"
     )) %>% 
+    filter(Expedition %in% c("Nov/20")) %>%
     mutate("Peixe" = if_else (`Curated ID` %in% c("",
                                                   "Cutibacterium acnes",
                                                   "Bos taurus",
@@ -1554,21 +1564,17 @@ editor_options:
   # O unico objetivo e tentar observar padroes em nossos dados!
   {
     # Transformar os dados da comunidade na matriz spp_sample_tbl para entrar no NMDS
-    spp_sample_hel <- decostand(spp_sample_tbl_f, method = "hellinger")
+    spp_sample_hel <- decostand(spp_sample_tbl_f[,4:35], method = "hellinger")
+    # spp_sample_hel <- decostand(spp_sample_tbl_f, method = "hellinger")
+    
+    # Definindo uma seed para garantir que os resultados sejam reprodutiveis
+    set.seed(1)
     
     # Criando o NMDS
     nmds1 <- metaMDS(spp_sample_hel, autotransform = FALSE) 
     
     # Plotando no vegan
     nmds1_vplot <- ordiplot(nmds1, type = "t") # type = "t" permite ver o nome dos pontos e das especies
-    
-    # Tentando mostrar o envelop
-    
-    nmds1_vplot2 <- ordiplot(nmds1, type = "t")
-    points (nmds1, col = spp_sample_tbl_f$L1_nov21, pch = spp_sample_tbl_f$L1_nov21)
-    for (i in seq (1, 4)) ordihull (nmds1, groups = spp_sample_tbl_f$L1_nov21, show.groups = i, col = i, lty = 'dotted')
-    
-    ### Deu tudo errado ^
     
     # Plotando no ggvegan
     nmds1_gvplot <- autoplot(nmds1) # ainda nao e um plot ideal. Os proximos passos vao deixar o plot mais publicavel
@@ -1628,7 +1634,16 @@ editor_options:
     
     ggsave(plot = nmds1_ggord, filename = "/home/gabriel/projetos/lagoa_ingleses/results/figuras/agosto/NDMS/nmds1_ggord.pdf",
            device = "pdf", units = "cm", height = 15, width = 20, dpi = 600)
-  }
+  
+    # Outra maneira de plotar
+    
+    scores(nmds1$points) %>% 
+      as_tibble(rownames = "points") %>% 
+      inner_join(., spp_sample_tbl_f, by = "Expedition")
+      ggplot(aes(x=MDS1, y= MDS2)) +
+      geom_point()
+    
+    }
 }
 # PCA Plots ----
 {
