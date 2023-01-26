@@ -50,7 +50,7 @@ editor_options:
 
 # Obtencao dos dados ----
 {
-  raw_results_tbl <- read.csv(paste0(tbl_path,"/","run_2_4_5_lagoa_ingleses_v2.csv"), sep = ",", check.names = FALSE) %>% tibble()
+  raw_results_tbl <- read.csv(paste0(tbl_path,"/","tabelas/raw/run_2_4_5/run_2_4_5_lagoa_ingleses_v2 - cheio_vazio.csv"), sep = ",", check.names = FALSE) %>% tibble()
   raw_results_tbl$`Curated ID`[raw_results_tbl$`Curated ID` %in% c("Oreochromis niloticus")] <- "Tilapia rendalli" # Oreochromis niloticus é Tilapia
 }
 
@@ -88,7 +88,12 @@ editor_options:
               "#d48fce", 
               "#4e7b53", 
               "#db3c4e", 
-              "#8acad8")
+              "#8acad8",
+              "#4c8649",
+              "#6e67b4",
+              "#8f752d",
+              "#b2523d",
+              "#b04c7f")
   
 }
 
@@ -144,10 +149,10 @@ editor_options:
                                 "Progne chalybea (Andorinha-grande)",
                                 "Sus scrofa"
                                 )) %>%
-    filter(!Sample %in% c("LI1-neo-mi",
-                          "L2_dez20",
-                          "L2_nov20")
-           ) %>%
+    # filter(!Sample %in% c("LI1-neo-mi",
+    #                       "L2_dez20",
+    #                       "L2_nov20")
+    #        ) %>%
     group_by(Sample,
              Expedition,
              Point,
@@ -156,7 +161,10 @@ editor_options:
              ) %>%
     summarize(`ID Abundance on sample (%)` = sum(`Relative abundance on sample`)
               ) %>%
-    mutate(Sample = factor(Sample, levels = c("L1_out21",
+    mutate(Sample = factor(Sample, levels = c("LI1-neo-mi",
+                                              "L2_dez20",
+                                              "L2_nov20",
+                                              "L1_out21",
                                               "L1_nov21",
                                               "L2_out21",
                                               "L2_nov21",
@@ -350,7 +358,7 @@ editor_options:
 
 ## Utilizando a abundancia relativa nas amostras para calcular a proporcao de peixes
 {
-  grouped_by_ID_especie_tbl <- raw_results_tbl %>%
+  reads_tbl <- raw_results_tbl %>%
     select(c(
       "Sample",
       "Expedition",
@@ -364,7 +372,7 @@ editor_options:
       "Abundance",
       "Sample total abundance"
     )) %>% 
-    filter(Expedition %in% c("Nov/20")) %>%
+    # filter(Expedition %in% c("Nov_Dec/20", "Dec/20", "Nov/20")) %>%
     mutate("Peixe" = if_else (`Curated ID` %in% c("",
                                                   "Cutibacterium acnes",
                                                   "Bos taurus",
@@ -391,14 +399,14 @@ editor_options:
               "Especie" = unique(Especie), #identificacao se as ASVs foram identificadas ao nivel de especie
               # `RRA` = sum(`Relative abundance on sample`)/11, #proporcao calculada com a RRA
               `Reads` = sum(`Abundance`), #numero de ASVs
-              `Proporcao` = sum(`Reads` / 2730833 * 100) #proporcao calculada com o total de ASVs
+              `Proporcao` = sum(`Reads` / 2730833 * 100) #proporcao calculada com o total de ASVs (sem filtrar)
     ) %>%
     ungroup()
 }
 
 ## Proporcoes barplots
 {
-  ### Proporcao de peixes
+  ### Proporcao de peixes 
   {peixe <- c("Não-peixes", "Peixes")
   reads <- c(25130, (160274 + 2545429))
   proporcao <- c(0.92, (5.87 + 93.21))
@@ -772,6 +780,73 @@ editor_options:
            device = "pdf", units = "cm", height = 20, width = 30, dpi = 600)
 }
 
+{# versão EBI like com todas as amostras e não-peixes
+  print(tile_EBI_all <- few_ID_tbl %>%
+          mutate(Expedition = factor(Expedition)) %>% # transformando variaveis categoricas em fatores com niveis
+          mutate(Sample = factor(Sample,
+                                 levels = c("L1_nov21",
+                                            "L1_out21",
+                                            "L2_nov21",
+                                            "L2_out21",
+                                            "L3_nov21",
+                                            "L3_out21",
+                                            "L4_nov21",
+                                            "L4_out21",
+                                            "L1-neo-mi",
+                                            "L2 Dez/20",
+                                            "L2 Nov/20"
+                                 ))) %>%
+          mutate(Expedition = factor(Expedition,
+                                     levels = c("Nov_Dec/20",
+                                                "Nov/20",
+                                                "Dec/20",
+                                                "out/21",
+                                                "Nov/21"
+                                     ))) %>%
+          mutate(Point = factor(Point)) %>%
+          mutate(File_name = factor(File_name)) %>%
+          mutate(Expedition = factor(Expedition)) %>%
+          filter(!is.na(`Curated ID`)) %>%   # retirar os NA
+          # filter(Expedition %in% c("out/21", # deixando apenas as amostras de 2021
+          #                          "Nov/21")) %>%
+          # filter(!`Curated ID` %in% c("Cavia magna", # Bela pediu para retirar essas especies
+          #                             "Bos taurus",
+          #                             "Canis familiaris",
+          #                             "Didelphis albiventris (Gamba)",
+          #                             "Homo sapiens",
+          #                             "Hydrochaeris hydrochaeris (Capivara)",
+          #                             "Nannopterum brasilianus",
+          #                             "Oryctolagus cuniculus (Coelho-bravo)",
+          #                             "Progne chalybea (Andorinha-grande)",
+          #                             "Sus scrofa")) %>%
+          ### Tile plot
+          ggplot(aes(y = `Curated ID`,
+                     # x = Point,
+                     x = Expedition,
+                     fill = RRA
+          )) +
+          geom_tile() +
+          facet_grid(~Point, # facetando por ponto
+                     scales = "free_x",
+                     space = "free_x") +
+          labs(fill ='Abundância \nrelativa (%)',
+               x = "Amostras",
+               y= "Espécies") +
+          ggtitle(label = "Espécies identificadas em cada ponto (todas amostras, todas spp)") +
+          geom_hline(yintercept = c(10.5)) + # linha que separa as especies de peixes e nao-peixes
+          scale_fill_continuous(
+            trans = "log10", # exibir a abundancia em escala logaritmica para favorecer a exibicao de baixo RRA
+            breaks = c(0.001, 0.01, 0.1, 1, 10, 75), # definindo os valores que aparecem na escala
+            type = "viridis") +
+          theme(text=element_text(size = 10, face = "bold")) +
+          guides(col = guide_legend(nrow = 6)) +
+          theme_bw(base_size = 16) +
+          theme(plot.title = element_text(hjust = 0.5)))
+  ## Plotando
+  ggsave(plot = tile_EBI_all, filename = "/home/gabriel/projetos/lagoa_ingleses/results/figuras/novembro/tile_plots/tile_EBI_all.pdf",
+         device = "pdf", units = "cm", height = 20, width = 30, dpi = 600)
+}
+
   ## Title plot exibindo todas as ids
   {
     tile_ponto_all <- all_ID_tbl %>%
@@ -837,7 +912,7 @@ editor_options:
 
   ## Exibindo por ano filtrando ids
   {
-    tile_ano_few <- few_ID_tbl %>%
+    print(tile_ano_few <- few_ID_tbl %>%
       mutate(Expedition = factor(Expedition)) %>% #transformando variaveis categoricas em fatores com niveis
       mutate(Sample = factor(Sample,
                            levels = c("L1_nov21",
@@ -887,7 +962,8 @@ editor_options:
       ggtitle(label = "Espécies identificadas por ano") +
       theme(text = element_text(size = 14)) +
       guides(col = guide_legend(nrow = 6)) +
-      theme(plot.title = element_text(hjust = 0.5))
+      theme(plot.title = element_text(hjust = 0.5)
+            ))
     
     ## Plotando
     ggsave(plot = tile_ano_few, filename = "/home/gabriel/projetos/lagoa_ingleses/results/figuras/setembro/tile_plots/tile_ano_few.pdf",
@@ -987,9 +1063,11 @@ editor_options:
                                    pattern = "_",
                                    n = 2)[,2]) %>%
     mutate(Mês = factor(Mês, levels = c("out21",
-                                        "nov21"))) %>%
-    filter(Expedition %in% c("out/21", # deixando apenas as amostras de 2021
-                             "Nov/21")) %>%
+                                        "nov21",
+                                        "dez20",
+                                        "nov20"))) %>%
+    # filter(Expedition %in% c("out/21", # deixando apenas as amostras de 2021
+    #                          "Nov/21")) %>%
     group_by(Sample,
              Read_origin,
              Primer,
@@ -1003,13 +1081,16 @@ editor_options:
               `Num OTUs` = length(unique(`OTU`)),
               `ID Abundance on sample (%)` = sum(`Relative abundance on sample`),
               `Ponto` = Point) %>%
-    mutate(Sample = factor(Sample, levels = c("L1_out21",
+    mutate(Sample = factor(Sample, levels = c("LI1-neo-mi",
+                                              "L2_dez20",
+                                              "L2_nov20",
                                               "L1_nov21",
+                                              "L1_out21",
                                               "L2_out21",
-                                              "L2_nov21",
                                               "L3_out21",
-                                              "L3_nov21",
                                               "L4_out21",
+                                              "L2_nov21",
+                                              "L3_nov21",
                                               "L4_nov21"
     ))) %>%
     ungroup() %>%
@@ -1039,10 +1120,10 @@ editor_options:
                         axes = "all",
                         space = "free_x",
                         independent ='x') +
-            scale_fill_manual(values = viridis::viridis(n=6)[c(2,5)]))
+            scale_fill_manual(values = viridis::viridis(n=6)[c(2,5,1,4)]))
     
     ## Plotando
-    ggsave(plot = alpha_plot_ponto, filename = "/home/gabriel/projetos/lagoa_ingleses/results/figuras/agosto/barplots/alpha_plot_ponto.pdf",
+    ggsave(plot = alpha_plot_ponto, filename = "/home/gabriel/projetos/lagoa_ingleses/results/figuras/novembro/barplots/alpha_plot_ponto.pdf",
            device = "pdf", units = "cm", height = 15, width = 20, dpi = 600)
     }
   
@@ -1073,7 +1154,7 @@ editor_options:
             scale_fill_manual(values = viridis::viridis(n=10)[c(1,7,5,9)]))
     
     ## Plotando
-    ggsave(plot = alpha_plot_mes_ponto, filename = "/home/gabriel/projetos/lagoa_ingleses/results/figuras/agosto/barplots/alpha_plot_mes_ponto.pdf",
+    ggsave(plot = alpha_plot_mes_ponto, filename = "/home/gabriel/projetos/lagoa_ingleses/results/figuras/novembro/barplots/alpha_plot_mes_ponto.pdf",
            device = "pdf", units = "cm", height = 15, width = 20, dpi = 600)
   }
   
@@ -1092,7 +1173,7 @@ editor_options:
             geom_text(stat = 'count', aes(label = ..count..), position = position_stack(vjust = 0.5), size = 4))
     
     ## Plotando
-    ggsave(plot = alpha_plot_mes_join, filename = "/home/gabriel/projetos/lagoa_ingleses/results/figuras/agosto/barplots/alpha_plot_mes_join.pdf",
+    ggsave(plot = alpha_plot_mes_join, filename = "/home/gabriel/projetos/lagoa_ingleses/results/figuras/novembro/barplots/alpha_plot_mes_join.pdf",
            device = "pdf", units = "cm", height = 15, width = 14, dpi = 600)
   }
   
@@ -1113,7 +1194,7 @@ editor_options:
     
     
     ## Plotando
-    ggsave(plot = alpha_plot_id_sample, filename = "/home/gabriel/projetos/lagoa_ingleses/results/figuras/agosto/barplots/alpha_plot_id_sample.pdf",
+    ggsave(plot = alpha_plot_id_sample, filename = "/home/gabriel/projetos/lagoa_ingleses/results/figuras/novembro/barplots/alpha_plot_id_sample.pdf",
            device = "pdf", units = "cm", height = 15, width = 28, dpi = 600)
   }
   
@@ -1149,10 +1230,10 @@ editor_options:
                         axes = "all",
                         space = "free_x",
                         independent ='x') +
-            scale_fill_manual(values = viridis::viridis(n=6)[c(2,5)]))
+            scale_fill_manual(values = viridis::viridis(n=6)[c(2,5,1,4)]))
     
     ## Plotando
-    ggsave(plot = asv_plot_ponto, filename = "/home/gabriel/projetos/lagoa_ingleses/results/figuras/agosto/barplots/asv_plot_ponto.pdf",
+    ggsave(plot = asv_plot_ponto, filename = "/home/gabriel/projetos/lagoa_ingleses/results/figuras/novembro/barplots/asv_plot_ponto.pdf",
            device = "pdf", units = "cm", height = 15, width = 20, dpi = 600)
     }
   
@@ -1186,7 +1267,7 @@ editor_options:
             scale_fill_manual(values = viridis::viridis(n=10)[c(1,7,5,9)]))
     
     ## Plotando
-    ggsave(plot = asv_plot_mes_ponto, filename = "/home/gabriel/projetos/lagoa_ingleses/results/figuras/agosto/barplots/asv_plot_mes_ponto.pdf",
+    ggsave(plot = asv_plot_mes_ponto, filename = "/home/gabriel/projetos/lagoa_ingleses/results/figuras/novembro/barplots/asv_plot_mes_ponto.pdf",
            device = "pdf", units = "cm", height = 15, width = 20, dpi = 600)
   }
   
@@ -1211,7 +1292,7 @@ editor_options:
                       size = 4))
     
     ## Plotando
-    ggsave(plot = asv_plot_mes_join, filename = "/home/gabriel/projetos/lagoa_ingleses/results/figuras/agosto/barplots/asv_plot_mes_join.pdf",
+    ggsave(plot = asv_plot_mes_join, filename = "/home/gabriel/projetos/lagoa_ingleses/results/figuras/novembro/barplots/asv_plot_mes_join.pdf",
            device = "pdf", units = "cm", height = 15, width = 14, dpi = 600)
   }
   

@@ -44,6 +44,7 @@
                                   "Cichlidae",
                                   "Hoplias",
                                   "Pimelodus",
+                                  "Siluriformes",
                                   "",
                                   "Cavia magna",
                                   "Cutibacterium acnes",
@@ -55,8 +56,8 @@
                                   "Nannopterum brasilianus",
                                   "Oryctolagus cuniculus (Coelho-bravo)",
                                   "Progne chalybea (Andorinha-grande)",
-                                  "Sus scrofa"
-      )) %>%
+                                  "Sus scrofa")) 
+    %>%
       mutate("Mês" = str_split_fixed(string = .$Sample, # criando uma nova coluna quebrando as infos da coluna Sample
                                      pattern = "_",
                                      n = 2)[,2]) %>%
@@ -102,6 +103,7 @@
                                   "Cichlidae",
                                   "Hoplias",
                                   "Pimelodus",
+                                  "Siluriformes",
                                   "",
                                   "Cavia magna",
                                   "Cutibacterium acnes",
@@ -161,6 +163,7 @@
                                   "Cichlidae",
                                   "Hoplias",
                                   "Pimelodus",
+                                  "Siluriformes",
                                   "",
                                   "Cavia magna",
                                   "Cutibacterium acnes",
@@ -199,6 +202,7 @@
                                   "Cichlidae",
                                   "Hoplias",
                                   "Pimelodus",
+                                  "Siluriformes",
                                   "",
                                   "Cavia magna",
                                   "Cutibacterium acnes",
@@ -285,4 +289,12 @@
   # Calculo media/sd de spp por expedicao
   mean(spp_exped_tbl$n_spp) #47.5
   sd(spp_exped_tbl$n_spp) #7.778175
+  
+  # Obter quais as especies de peixes que foram identificadas
+  alpha_tbl$`Curated ID` %>% unique() %>% sort() %>% cat(sep =", ") 
+    # ira apresentar o resultado como uma lista sem paragrafos, com os nomes 
+    # separados por virgulas
+  
+  # Obter o numero de especies
+  alpha_tbl$`Curated ID` %>% unique() %>% sort() %>% length()
 }

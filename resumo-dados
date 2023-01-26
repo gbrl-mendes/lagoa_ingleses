@@ -1,3 +1,6 @@
+Utilizando raw_results$Abundace %>% sum(), conseguimos obter 2730833 de ASVs
+obtidas com MCE de 2021.
+
 Considerando as filtragens que passaram pela grouped_by_id e few_id_tbl, 
 temos 40 espécies sendo 32 espécies de peixes.
 
