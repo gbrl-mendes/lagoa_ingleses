@@ -31,9 +31,17 @@
 {
   # Filtrando os dados ----
   
-  ## Alpha tbl original
+  ## Separando raw_results por ano
+  
+  raw_2020 <- raw_results_tbl %>% # Campanhas 2020
+    filter(Year == 2020)
+  raw_2021 <- raw_results_tbl %>% # Campanhas 2021
+    filter(Year == 2021)
+  
+  ## Alpha tbl
   {
-    alpha_tbl <- raw_results_tbl %>%
+    # Para 2020
+    alpha_tbl_2020 <- raw_2020 %>%
       # filter(`Relative abundance on sample` >= 0.01) %>% # heron pediu para manter as ASVs espurias
       filter(!`Curated ID` %in% c("Actinopteri", ## tirando as ASVs que nao foram identificadas a nivel de especie, nao-peixes e NA
                                   "Astyanax",
@@ -56,29 +64,103 @@
                                   "Nannopterum brasilianus",
                                   "Oryctolagus cuniculus (Coelho-bravo)",
                                   "Progne chalybea (Andorinha-grande)",
-                                  "Sus scrofa")) 
-    %>%
-      mutate("Mês" = str_split_fixed(string = .$Sample, # criando uma nova coluna quebrando as infos da coluna Sample
-                                     pattern = "_",
-                                     n = 2)[,2]) %>%
-      mutate(Mês = factor(Mês, levels = c("out21",
-                                          "nov21"))) %>%
-      filter(Expedition %in% c("out/21", # deixando apenas as amostras de 2021
-                               "Nov/21")) %>%
+                                  "Sus scrofa"
+                                  )) %>%
+      # mutate("Mês" = str_split_fixed(string = .$Sample, # criando uma nova coluna quebrando as infos da coluna Sample
+      #                                pattern = "_",
+      #                                n = 2)[,2]) %>%
+      # mutate(Mês = factor(Mês, levels = c("dez20",
+      #                                     "nov20",
+      #                                     "out21",
+      #                                     "nov21"))) %>%
+      filter(Expedition %in% c("Nov_Dec/20",
+                               "Nov/20",
+                               "Dec/20",
+                               "out/21",
+                               "Nov/21"
+                               )) %>%
       group_by(Sample,
                Read_origin,
                Primer,
                `Curated ID`,
                Year,
                Point,
-               Expedition,
-               Mês
+               Expedition
       ) %>%
       summarize(`Num ASVs` = length(unique(`ASV (Sequence)`)),
                 `Num OTUs` = length(unique(`OTU`)),
                 `ID Abundance on sample (%)` = sum(`Relative abundance on sample`),
                 `Ponto` = Point) %>%
-      mutate(Sample = factor(Sample, levels = c("L1_out21",
+      mutate(Sample = factor(Sample, levels = c("LI1-neo-mi",
+                                                "L2_nov20",
+                                                "L2_dez20",
+                                                "L1_out21",
+                                                "L1_nov21",
+                                                "L2_out21",
+                                                "L2_nov21",
+                                                "L3_out21",
+                                                "L3_nov21",
+                                                "L4_out21",
+                                                "L4_nov21"
+      ))) %>%
+      ungroup() %>%
+      unique()
+    
+    ## Para 2021
+    alpha_tbl_2021 <- raw_2021 %>%
+      # filter(`Relative abundance on sample` >= 0.01) %>% # heron pediu para manter as ASVs espurias
+      filter(!`Curated ID` %in% c("Actinopteri", ## tirando as ASVs que nao foram identificadas a nivel de especie, nao-peixes e NA
+                                  "Astyanax",
+                                  "Characidae",
+                                  "Characidium",
+                                  "Characiformes",
+                                  "Cichla",
+                                  "Cichlidae",
+                                  "Hoplias",
+                                  "Pimelodus",
+                                  "Siluriformes",
+                                  "",
+                                  "Cavia magna",
+                                  "Cutibacterium acnes",
+                                  "Bos taurus",
+                                  "Canis familiaris",
+                                  "Didelphis albiventris (Gamba)",
+                                  "Homo sapiens",
+                                  "Hydrochaeris hydrochaeris (Capivara)",
+                                  "Nannopterum brasilianus",
+                                  "Oryctolagus cuniculus (Coelho-bravo)",
+                                  "Progne chalybea (Andorinha-grande)",
+                                  "Sus scrofa"
+      )) %>%
+      # mutate("Mês" = str_split_fixed(string = .$Sample, # criando uma nova coluna quebrando as infos da coluna Sample
+      #                                pattern = "_",
+      #                                n = 2)[,2]) %>%
+      # mutate(Mês = factor(Mês, levels = c("dez20",
+      #                                     "nov20",
+      #                                     "out21",
+      #                                     "nov21"))) %>%
+      filter(Expedition %in% c("Nov_Dec/20",
+                               "Nov/20",
+                               "Dec/20",
+                               "out/21",
+                               "Nov/21"
+      )) %>%
+      group_by(Sample,
+               Read_origin,
+               Primer,
+               `Curated ID`,
+               Year,
+               Point,
+               Expedition
+      ) %>%
+      summarize(`Num ASVs` = length(unique(`ASV (Sequence)`)),
+                `Num OTUs` = length(unique(`OTU`)),
+                `ID Abundance on sample (%)` = sum(`Relative abundance on sample`),
+                `Ponto` = Point) %>%
+      mutate(Sample = factor(Sample, levels = c("LI1-neo-mi",
+                                                "L2_nov20",
+                                                "L2_dez20",
+                                                "L1_out21",
                                                 "L1_nov21",
                                                 "L2_out21",
                                                 "L2_nov21",
@@ -240,7 +322,15 @@
   # Calculo media/sd de ASVs por expedicao
   mean(expedition_tbl$`Num ASVs`) #139.5
   sd(expedition_tbl$`Num ASVs`) #4.94
-}  
+
+  ## Separando por ano
+  
+  alpha_tbl_2020 <- alpha_tbl %>% # Campanhas 2020
+    filter(Year == 2020)
+  
+  alpha_tbl_2021 <- alpha_tbl %>% # Campanhas 2021
+    filter(Year == 2021)
+  }  
 
 
 ## Estatísticas das Spp ----
@@ -289,12 +379,21 @@
   # Calculo media/sd de spp por expedicao
   mean(spp_exped_tbl$n_spp) #47.5
   sd(spp_exped_tbl$n_spp) #7.778175
+}
   
-  # Obter quais as especies de peixes que foram identificadas
-  alpha_tbl$`Curated ID` %>% unique() %>% sort() %>% cat(sep =", ") 
-    # ira apresentar o resultado como uma lista sem paragrafos, com os nomes 
-    # separados por virgulas
+  
+  ## Numeros para o relatorio do CAE ----
+  
+  # Obter numero de ASVs de cada campanha
+  alpha_tbl_2020$Abundance %>% sum()
+  alpha_tbl_2021$Abundance %>% sum()
   
   # Obter o numero de especies
-  alpha_tbl$`Curated ID` %>% unique() %>% sort() %>% length()
-}
+  alpha_tbl_2020$`Curated ID` %>% unique() %>% sort() %>% length() # em 2020
+  alpha_tbl_2021$`Curated ID` %>% unique() %>% sort() %>% length() # em 2021
+  
+  # Obter quais as especies de peixes que foram identificadas
+  alpha_tbl_2020$`Curated ID` %>% unique() %>% sort() %>% cat(sep =", ")
+  alpha_tbl_2021$`Curated ID` %>% unique() %>% sort() %>% cat(sep =", ")
+    # ira apresentar o resultado como uma lista sem paragrafos, com os nomes 
+    # separados por virgulas
