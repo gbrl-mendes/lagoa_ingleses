@@ -23,7 +23,7 @@
 
 # Obtencao dos dados ----
 {
-  raw_results_tbl <- read.csv(paste0(tbl_path,"/","run_2_4_5_lagoa_ingleses_v2.csv"), sep = ",", check.names = FALSE) %>% tibble()
+  raw_results_tbl <- read.csv(paste0(tbl_path,"/","run_2_4_5_lagoa_ingleses_v2023.csv"), sep = ",", check.names = FALSE) %>% tibble()
   raw_results_tbl$`Curated ID`[raw_results_tbl$`Curated ID` %in% c("Oreochromis niloticus")] <- "Tilapia rendalli" # Oreochromis niloticus é Tilapia
 }
 
@@ -397,3 +397,5 @@
   alpha_tbl_2021$`Curated ID` %>% unique() %>% sort() %>% cat(sep =", ")
     # ira apresentar o resultado como uma lista sem paragrafos, com os nomes 
     # separados por virgulas
+
+  

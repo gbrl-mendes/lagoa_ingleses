@@ -24,7 +24,7 @@
 
 # Obtencao dos dados ----
 {
-  raw_results_tbl <- read.csv(paste0(tbl_path,"/","run_2_4_5_lagoa_ingleses_v2.csv"), sep = ",", check.names = FALSE) %>% tibble()
+  raw_results_tbl <- read.csv(paste0(tbl_path,"/","tabelas/raw/run_2_4_5/run_2_4_5_lagoa_ingleses_v2023.csv.csv"), sep = ",", check.names = FALSE) %>% tibble()
   raw_results_tbl$`Curated ID`[raw_results_tbl$`Curated ID` %in% c("Oreochromis niloticus")] <- "Tilapia rendalli" # Oreochromis niloticus é Tilapia
 }
 
@@ -33,7 +33,7 @@
 # Sequencias da tabela usada nos plots
 # asvs_tbl <- read.csv(file = "/home/gabriel/projetos/lagoa_ingleses/tabelas/raw/arvore/ASVs_seqs.csv", sep = ";") # nao irei utilizar mais todas as seqs, apenas as maiores
 
-bigger_seqs <-raw_results_tbl %>% # codigo para conseguir pegar as amiores seqs de ASVs de cada especie
+bigger_seqs <-raw_results_tbl %>% 
   select(`Curated ID`,
          `ASV header`,
          `ASV (Sequence)`,
@@ -60,11 +60,11 @@ bigger_seqs <-raw_results_tbl %>% # codigo para conseguir pegar as amiores seqs 
                               "Progne chalybea (Andorinha-grande)",
                               "Sus scrofa")) %>%
   filter(Expedition %in% c("out/21", # deixando apenas as amostras de 2021
-                           "Nov/21")) %>% 
+                           "Nov/21")) %>%
   group_by(`Curated ID`) %>% 
-  slice(which.max(nchar(`ASV (Sequence)`)))
+  dplyr::slice(which.max(nchar(`ASV (Sequence)`)))
   
-# Criando a coluna cabec unindo o nome das ASVs com o nome das especies
+# Criando a coluna cabecalho unindo o nome das ASVs com o nome das especies
 asvs_tbl <- bigger_seqs %>% 
   as_tibble() %>%
   select(`ASV header`, 
@@ -155,7 +155,7 @@ asvs_tree_plot %>% ggsave(filename = "/home/gabriel/projetos/lagoa_ingleses/resu
 
 # Salvando a arvore em NWK
 ape::write.tree(phy = asvs_tree,
-                file = "~/projetos/lagoa_ingleses/tree/asvs_tree.nwk")
+                file = "~/projetos/lagoa_ingleses/results/tree/setembro/asvs_tree.nwk")
 
 # Extraindo as IDs
 

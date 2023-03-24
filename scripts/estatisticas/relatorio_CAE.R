@@ -23,7 +23,7 @@
 
 # Obtencao dos dados ----
 {
-  raw_results_tbl <- read.csv(paste0(tbl_path,"/","run_2_4_5_lagoa_ingleses_v2.csv"), sep = ",", check.names = FALSE) %>% tibble()
+  raw_results_tbl <- read.csv(paste0(tbl_path,"/","run_2_4_5_lagoa_ingleses_v2023.csv"), sep = ",", check.names = FALSE) %>% tibble()
   raw_results_tbl$`Curated ID`[raw_results_tbl$`Curated ID` %in% c("Oreochromis niloticus")] <- "Tilapia rendalli" # Oreochromis niloticus é Tilapia
 }
 
@@ -78,7 +78,10 @@
                `Curated ID`,
                Year,
                Point,
-               Expedition
+               Expedition,
+               Class,
+               Order,
+               Family
       ) %>%
       summarize(`Num ASVs` = length(unique(`ASV (Sequence)`)),
                 `Num OTUs` = length(unique(`OTU`)),
@@ -125,7 +128,10 @@
                `Curated ID`,
                Year,
                Point,
-               Expedition
+               Expedition,
+               Class,
+               Order,
+               Family
       ) %>%
       summarize(`Num ASVs` = length(unique(`ASV (Sequence)`)),
                 `Num OTUs` = length(unique(`OTU`)),
@@ -160,4 +166,39 @@
   # Recuperando o nome das spp
     alpha_tbl_2020$`Curated ID` %>% unique() %>% sort() %>% cat(sep = ", ")
     alpha_tbl_2021$`Curated ID` %>% unique() %>% sort() %>% cat(sep = ", ")
+    
+  # Spp por ponto em 2021
+    L1_2021 <- alpha_tbl_2021 %>% filter(Point == "L1") %>% select("Curated ID")
+    L2_2021 <- alpha_tbl_2021 %>% filter(Point == "L2") %>% select("Curated ID")
+    L3_2021 <- alpha_tbl_2021 %>% filter(Point == "L3") %>% select("Curated ID")
+    L4_2021 <- alpha_tbl_2021 %>% filter(Point == "L4") %>% select("Curated ID")
+    
+  # Spp exclusivas de cada ponto em 2021
+    uniq_L1_2021 <- setdiff(as.character(unlist(L1_2021)), as.character(unlist((c(L2_2021, L3_2021, L4_2021))))) %>% sort() %>% cat(sep = ", ")
+    uniq_L2_2021 <- setdiff(as.character(unlist(L2_2021)), as.character(unlist((c(L1_2021, L3_2021, L4_2021))))) %>% sort() %>% cat(sep = ", ")
+    uniq_L3_2021 <- setdiff(as.character(unlist(L3_2021)), as.character(unlist((c(L1_2021, L2_2021, L4_2021))))) %>% sort() %>% cat(sep = ", ")
+    uniq_L4_2021 <- setdiff(as.character(unlist(L4_2021)), as.character(unlist((c(L1_2021, L2_2021, L3_2021))))) %>% sort() %>% cat(sep = ", ")
+    
+  # Spp em comum com todos os pontos em 2021
+    shared_spp_2021 <- intersect(as.character(unlist(L1_2021)), as.character(unlist((c(L2_2021, L3_2021, L4_2021)))))
+    
+  # Descobrir quais classes estao presentes
+    # Em 2020
+    alpha_tbl_2020$Class %>% unique() %>% sort() %>% cat(sep = ", ") # Actinopteri
+    # Em 2021
+    alpha_tbl_2021$Class %>% unique() %>% sort() %>% cat(sep = ", ") # Actinopteri
+  # Descobrir quais ordens estao presentes
+    # Em 2020
+    alpha_tbl_2020$Order %>% unique() %>% sort() %>% cat(sep = ", ") # Characiformes, Cichliformes, Gymnotiformes, Siluriformes
+    # Em 2021
+    alpha_tbl_2021$Order %>% unique() %>% sort() %>% cat(sep = ", ") # Characiformes, Cichliformes, Cyprinodontiformes, Gymnotiformes, Salmoniformes, Siluriformes
+  
+      
+    geom_tile() +
+      # geom_text(aes(label= RRA),
+      geom_text(aes(label= sprintf("%0.2f", round(RRA, digits = 2))), # exibindo os valores de RRA dentro dos tiles para facilitar a discussao (opcional)
+                colour = "black", size = 3
+      )
+    
+    
     
