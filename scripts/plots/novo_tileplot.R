@@ -45,15 +45,15 @@ date: "22/03/2023"
 
 # Tile Plots ----
 
-## Criacao das tabelas all_ids_tbl e few_ids_tbl
+# Criacao das tabelas all_ids_tbl e few_ids_tbl
 {
-  ## Criacao da lista com os possiveis nomes atribuidos as ASVs
+  # Criacao da lista com os possiveis nomes atribuidos as ASVs
   {
     raw_results_tbl %>% colnames()
     raw_results_tbl %>% colnames() %>% paste0(collapse = '",\n"') %>% cat()
   }
   
-  ## Agrupamento da ASVs que possuem os mesmos atributos abaixo
+  # Agrupamento da ASVs que possuem os mesmos atributos abaixo
   {
     grouped_by_ID_BLASTid <- raw_results_tbl %>%
       select(c(
@@ -82,63 +82,64 @@ date: "22/03/2023"
       ungroup()
   }
   
-  ## Organizar as especies
+  # Organizar as especies
   {
     grouped_by_ID_BLASTid$`Curated ID` %>% unique()%>% sort() %>%  paste0(collapse = '",\n"') %>% cat()
     grouped_by_ID_BLASTid$Sample %>% unique()%>% sort() %>%  paste0(collapse = '",\n"') %>% cat()
   }
   
-  ## Organizar ordem
+  # Organizar ordem
   {
-    ordens <- c("Characiformes",
-                "Siluriformes",
-                "Cichliformes",
-                "Gymnotiformes",
-                "Cyprinodontiformes",
-                "Salmoniformes")
-  }
-  
-  ## Definir quais serao as especies e ordenar
+    fish_ordens <- c("Characiformes", # ordem das ordens de peixes 
+                     "Siluriformes", 
+                     "Cichliformes", 
+                     "Gymnotiformes", 
+                     "Cyprinodontiformes", 
+                     "Salmoniformes")
+  }  
   
   {
-    spp_fish <- c("Acinocheirodon melanogramma",
-                  "Astyanax fasciatus",
-                  "Astyanax lacustris",
-                  "Brycon orthotaenia",
-                  "Bryconamericus stramineus",
-                  "Colossoma macropomum",
-                  "Coptodon zillii",
-                  "Eigenmannia virescens",
-                  "Gymnotus carapo",
-                  "Hemigrammus gracilis",
-                  "Hemigrammus marginatus",
-                  "Hoplias intermedius",
-                  "Hoplias malabaricus",
-                  "Leporellus vittatus",
-                  "Leporinus piau",
-                  "Leporinus reinhardti",
-                  "Leporinus taeniatus",
-                  "Megaleporinus elongatus",
-                  "Megaleporinus garmani",
-                  "Moenkhausia costae",
-                  "Myleus micans",
-                  "Orthospinus franciscensis",
-                  "Pimelodus fur",
-                  "Pimelodus maculatus",
-                  "Pimelodus pohli",
-                  "Planaltina myersi",
-                  "Poecilia reticulata",
-                  "Prochilodus costatus",
-                  "Pseudoplatystoma corruscans",
-                  "Pygocentrus piraya",
-                  "Rhamdia quelen",
-                  "Salmo salar",
-                  "Serrasalmus brandtii",
-                  "Tilapia rendalli",
-                  "Wertheimeria maculata")
+    nfish_classes <- c("Aves", # ordem das classes de nao peixes
+                       "Actinobacteria",
+                       "Mammalia")
   }
   
-  ## Definir quais serao as amostras e ordenar
+  {
+    nfish_ordens <- c("Actinomycetales", # ordem das ordens de nao peixes 
+                      "Artiodactyla", 
+                      "Carnivora",
+                      "Didelphimorphia",
+                      "Lagomorpha",
+                      "Primates",
+                      "Rodentia",
+                      "Suliformes")
+  }
+  
+  # Definir quais serao as especies e ordenar
+  
+  {
+    spp_fish <- raw_results_tbl %>%  # especies de peixes
+      filter(Class == "Actinopteri") %>%
+      mutate(words_count = str_count(`Curated ID`, "\\w+")) %>% 
+      filter(words_count == 2) %>% 
+      filter(`Curated ID` != "") %>% 
+      select(`Curated ID`) %>% 
+      unique() %>% 
+      arrange(`Curated ID`) %>% 
+      pull()
+  }
+  
+  {
+    no_fish <- raw_results_tbl %>%  # outras esecies
+      filter(Class != "Actinopteri") %>% 
+      filter(`Curated ID` != "") %>% 
+      select(`Curated ID`) %>% 
+      unique() %>% 
+      arrange(`Curated ID`) %>% 
+      pull()
+  }
+  
+  # Definir quais serao as amostras e ordenar
   {
     samples <- c("L1_nov21",
                  "L1_out21",
@@ -153,7 +154,7 @@ date: "22/03/2023"
                  "L2 Nov/20")
   }
   
-  ## Definir quais serao as campanhas e ordenar
+  # Definir quais serao as campanhas e ordenar
   {
     expeditions <- c("Nov_Dec/20",
                        "Nov/20",
@@ -162,30 +163,72 @@ date: "22/03/2023"
                        "Nov/21")
   }
   
-  ### Sem os grupos alterado
+  # tabela so peixes
   {
-    few_ID_tbl <- grouped_by_ID_BLASTid %>% #ids apenas os peixes a nivel de spp
+    fish_ID_tbl <- grouped_by_ID_BLASTid %>% # ids apenas os peixes a nivel de spp
       mutate(`Curated ID` = factor(`Curated ID`,
                                      levels = rev(spp_fish))) %>% 
       mutate(`Order (BLASTn)` = factor(`Order (BLASTn)`,
-                                       levels = ordens))
+                                       levels = fish_ordens))
+  }
+  
+  # tabela nao peixes
+  {
+    nfish_ID_tbl <- grouped_by_ID_BLASTid %>% # ids nao peixes a nivel de spp
+      mutate(`Curated ID` = factor(`Curated ID`,
+                                     levels = rev(no_fish))) %>% 
+      mutate(`Order (BLASTn)` = factor(`Order (BLASTn)`,
+                                       levels = nfish_ordens))
   }
 }
 
 ## Criacao do Tile Plot das amostras da Lagoa dos Ingleses sequenciadas nas corridas 2, 4 e 5
 
-### Por campanha
-
-## Plot Tile plot (baseado no vEBI)
-{tile
-  few_ID_tbl %>%
-    mutate(Expedition = factor(Expedition, levels = expeditions)) %>%
-    mutate(Sample = factor(Sample, levels = samples)) %>%
-    mutate(Point = factor(Point)) %>%
-    mutate(File_name = factor(File_name)) %>%
+  # Por campanha peixes
+{
+  tile_plot_campanhas <-
+    fish_ID_tbl %>% 
+    mutate(Expedition = factor(Expedition, levels = expeditions)) %>% 
+    mutate(Sample = factor(Sample, levels = samples)) %>% 
+    mutate(Point = factor(Point)) %>% 
+    mutate(File_name = factor(File_name)) %>% 
     filter(!is.na(`Curated ID`)) %>%
-    mutate(`Class (BLASTn)` = factor(`Class (BLASTn)`)) %>%
-    mutate(`Order (BLASTn)` = factor(`Order (BLASTn)`)) %>%
+    mutate(`Order (BLASTn)` = factor(`Order (BLASTn)`)) %>% 
+    ggplot(aes(y = `Curated ID`, 
+               group = `Curated ID`, 
+               x = Point, 
+               fill = RRA)) +
+    geom_tile() +
+    facet_grid(cols = vars(Expedition), 
+               rows = vars(`Order (BLASTn)`),
+               space = "free_y", drop = TRUE, 
+               scales = "free_y") +
+    labs(fill ='Abundância \nrelativa (%)',
+         x = "Pontos",
+         y= "Espécies") +
+    ggtitle(label = "Espécies identificadas") +
+    scale_fill_continuous(
+      trans = "log10",
+      breaks = c(0.001, 0.01, 0.1, 1, 10, 75),
+      type = "viridis") +
+    theme(text=element_text(size = 13)) +
+    theme(strip.text.y = element_text(angle=0))
+}
+
+  ggsave(plot = tile_plot_campanhas, filename = "/home/gabriel/projetos/lagoa_ingleses/results/figuras/2023/qualificacao/tileplots/tile_plot_campanhas.pdf",
+         device = "pdf", units = "cm", height = 20, width = 30, dpi = 600)
+
+# Por campanha nao-peixes
+{
+  tile_plot_campanhas <-
+    nfish_ID_tbl %>% 
+    mutate(Expedition = factor(Expedition, levels = expeditions)) %>% 
+    mutate(Sample = factor(Sample, levels = samples)) %>% 
+    mutate(Point = factor(Point)) %>% 
+    mutate(File_name = factor(File_name)) %>% 
+    filter(!is.na(`Curated ID`)) %>% 
+    mutate(`Order (BLASTn)` = factor(`Order (BLASTn)`)) %>% 
+    mutate(`Class (BLASTn)` = factor(`Class (BLASTn)`)) %>% 
     ggplot(aes(y = `Curated ID`, 
                group = `Curated ID`, 
                x = Point, 
@@ -203,14 +246,10 @@ date: "22/03/2023"
       trans = "log10",
       breaks = c(0.001, 0.01, 0.1, 1, 10, 75),
       type = "viridis") +
-    theme(text=element_text(size = 10, face = "bold"), 
-          strip.text.y = element_text(angle = 0)) + 
-    guides(col = guide_legend(nrow = 6)) +
-    theme_bw(base_size = 16) +
-    theme(plot.title = element_text(hjust = 0.5))
+    theme(text=element_text(size = 13)) +
+    theme(strip.text.y = element_text(angle=0))
+  }  
   
-    ggsave(plot = tile_ponto_few, filename = "/home/gabriel/projetos/lagoa_ingleses/results/figuras/tile_ponto_few.pdf",
+  ggsave(plot = tile_plot_campanhas, filename = "/home/gabriel/projetos/lagoa_ingleses/results/figuras/2023/qualificacao/tileplots/tile_plot_campanhas.pdf",
          device = "pdf", units = "cm", height = 20, width = 30, dpi = 600)
-}
-
 
