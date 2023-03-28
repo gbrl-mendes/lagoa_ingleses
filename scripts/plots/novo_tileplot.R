@@ -71,8 +71,10 @@ date: "22/03/2023"
       group_by(Sample, `Curated ID`, Expedition, Point, Sample.Name, File_name, ) %>% 
       summarize(`Sample` = unique(Sample),
                 `Curated ID` = unique(`Curated ID`),
-                `Class (BLASTn)` = unique(`Class`),
-                `Order (BLASTn)` = unique(`Order`),
+                `Class`,
+                `Order`,
+                # `Class` = unique(`Class`),
+                # `Order` = unique(`Order`),
                 `Expedition` = unique(Expedition),
                 `Year` = unique(Year),
                 `Point` = unique(Point),
@@ -120,9 +122,9 @@ date: "22/03/2023"
   {
     spp_fish <- raw_results_tbl %>%  # especies de peixes
       filter(Class == "Actinopteri") %>%
-      mutate(words_count = str_count(`Curated ID`, "\\w+")) %>% 
-      filter(words_count == 2) %>% 
-      filter(`Curated ID` != "") %>% 
+      # mutate(words_count = str_count(`Curated ID`, "\\w+")) %>% 
+      # filter(words_count == 2) %>% 
+      # filter(`Curated ID` != "") %>% 
       select(`Curated ID`) %>% 
       unique() %>% 
       arrange(`Curated ID`) %>% 
@@ -130,14 +132,14 @@ date: "22/03/2023"
   }
   
   {
-    no_fish <- raw_results_tbl %>%  # outras esecies
+    no_fish <- raw_results_tbl %>%  # outras especies
       filter(Class != "Actinopteri") %>% 
       filter(`Curated ID` != "") %>% 
       select(`Curated ID`) %>% 
       unique() %>% 
       arrange(`Curated ID`) %>% 
       pull()
-  }
+  }  
   
   # Definir quais serao as amostras e ordenar
   {
@@ -168,7 +170,7 @@ date: "22/03/2023"
     fish_ID_tbl <- grouped_by_ID_BLASTid %>% # ids apenas os peixes a nivel de spp
       mutate(`Curated ID` = factor(`Curated ID`,
                                      levels = rev(spp_fish))) %>% 
-      mutate(`Order (BLASTn)` = factor(`Order (BLASTn)`,
+      mutate(`Order` = factor(`Order`,
                                        levels = fish_ordens))
   }
   
@@ -177,9 +179,31 @@ date: "22/03/2023"
     nfish_ID_tbl <- grouped_by_ID_BLASTid %>% # ids nao peixes a nivel de spp
       mutate(`Curated ID` = factor(`Curated ID`,
                                      levels = rev(no_fish))) %>% 
-      mutate(`Order (BLASTn)` = factor(`Order (BLASTn)`,
+      mutate(`Order` = factor(`Order`,
                                        levels = nfish_ordens))
   }
+  
+  # tabela peixes & outros
+  {
+    all_ID_tbl <- grouped_by_ID_BLASTid %>% # ids nao peixes a nivel de spp
+      # mutate(`Curated ID` = factor(`Curated ID`,
+      #                                levels = rev(no_fish))) %>% 
+      # mutate(`Order` = factor(`Order`,
+      #                                  levels = nfish_ordens)) %>% 
+      mutate('classificacao' = ifelse(`Curated ID` == "" | `Class` != "Actinopteri", "outros", `Curated ID`))
+  }
+}
+
+  # ordem das ids da tabela all_ID_tbl DESCOBRIR COMO QUE COLOCA O "outros" NO FINAL DA ORDEM DAS ESPECIES
+{
+  all_ids <- all_ID_tbl %>%
+    select(classificacao) %>%
+    mutate(classificacao = ifelse(classificacao == "outros", "zzz_outros", classificacao)) %>%
+    unique() %>%
+    arrange(classificacao) %>%
+    slice(-which(classificacao == "zzz_outros")) %>% 
+    pull()
+
 }
 
 ## Criacao do Tile Plot das amostras da Lagoa dos Ingleses sequenciadas nas corridas 2, 4 e 5
@@ -193,14 +217,16 @@ date: "22/03/2023"
     mutate(Point = factor(Point)) %>% 
     mutate(File_name = factor(File_name)) %>% 
     filter(!is.na(`Curated ID`)) %>%
-    mutate(`Order (BLASTn)` = factor(`Order (BLASTn)`)) %>% 
+    mutate(`Order` = factor(`Order`)) %>% 
     ggplot(aes(y = `Curated ID`, 
                group = `Curated ID`, 
                x = Point, 
                fill = RRA)) +
     geom_tile() +
+    geom_text(aes(label= sprintf("%0.2f", round(RRA, digits = 2))), # exibindo os valores de RRA dentro dos tiles para facilitar a discussao (opcional)
+              colour = "black", size = 3) +
     facet_grid(cols = vars(Expedition), 
-               rows = vars(`Order (BLASTn)`),
+               rows = vars(`Order`),
                space = "free_y", drop = TRUE, 
                scales = "free_y") +
     labs(fill ='Abundância \nrelativa (%)',
@@ -221,22 +247,24 @@ date: "22/03/2023"
 # Por campanha nao-peixes
 {
   tile_plot_campanhas <-
-    nfish_ID_tbl %>% 
-    mutate(Expedition = factor(Expedition, levels = expeditions)) %>% 
-    mutate(Sample = factor(Sample, levels = samples)) %>% 
-    mutate(Point = factor(Point)) %>% 
-    mutate(File_name = factor(File_name)) %>% 
-    filter(!is.na(`Curated ID`)) %>% 
-    mutate(`Order (BLASTn)` = factor(`Order (BLASTn)`)) %>% 
-    mutate(`Class (BLASTn)` = factor(`Class (BLASTn)`)) %>% 
-    ggplot(aes(y = `Curated ID`, 
-               group = `Curated ID`, 
-               x = Point, 
+    nfish_ID_tbl %>%
+    mutate(Expedition = factor(Expedition, levels = expeditions)) %>%
+    mutate(Sample = factor(Sample, levels = samples)) %>%
+    mutate(Point = factor(Point)) %>%
+    mutate(File_name = factor(File_name)) %>%
+    filter(!is.na(`Curated ID`)) %>%
+    mutate(`Order` = factor(`Order`)) %>%
+    mutate(`Class` = factor(`Class`)) %>%
+    ggplot(aes(y = `Curated ID`,
+               group = `Curated ID`,
+               x = Point,
                fill = RRA)) +
     geom_tile() +
-    facet_grid(cols = vars(Expedition), 
-               rows = vars(`Class (BLASTn)`, `Order (BLASTn)`),
-               space = "free_y", drop = TRUE, 
+    geom_text(aes(label= sprintf("%0.2f", round(RRA, digits = 2))), # exibindo os valores de RRA dentro dos tiles para facilitar a discussao (opcional)
+              colour = "black", size = 3) +
+    facet_grid(cols = vars(Expedition),
+               rows = vars(`Class`, `Order`),
+               space = "free_y", drop = TRUE,
                scales = "free_y") +
     labs(fill ='Abundância \nrelativa (%)',
          x = "Pontos",
@@ -248,7 +276,40 @@ date: "22/03/2023"
       type = "viridis") +
     theme(text=element_text(size = 13)) +
     theme(strip.text.y = element_text(angle=0))
-  }  
+  }
+  
+  # Por campanha tudo
+{
+  tile_plot_campanhas <-
+    al %>%
+    mutate(Expedition = factor(Expedition, levels = expeditions)) %>%
+    mutate(Sample = factor(Sample, levels = samples)) %>%
+    mutate(Point = factor(Point)) %>%
+    mutate(File_name = factor(File_name)) %>%
+    mutate(`Order` = factor(`Order`)) %>%
+    mutate(`Class` = factor(`Class`)) %>%
+    ggplot(aes(y = `Curated ID`,
+               group = `Curated ID`,
+               x = Point,
+               fill = RRA)) +
+    geom_tile() +
+    geom_text(aes(label= sprintf("%0.2f", round(RRA, digits = 2))), # exibindo os valores de RRA dentro dos tiles para facilitar a discussao (opcional)
+              colour = "black", size = 3) +
+    facet_grid(cols = vars(Expedition),
+               rows = vars(`Class`, `Order`),
+               space = "free_y", drop = TRUE,
+               scales = "free_y") +
+    labs(fill ='Abundância \nrelativa (%)',
+         x = "Pontos",
+         y= "Espécies") +
+    ggtitle(label = "Espécies identificadas") +
+    scale_fill_continuous(
+      trans = "log10",
+      breaks = c(0.001, 0.01, 0.1, 1, 10, 75),
+      type = "viridis") +
+    theme(text=element_text(size = 13)) +
+    theme(strip.text.y = element_text(angle=0))
+  }
   
   ggsave(plot = tile_plot_campanhas, filename = "/home/gabriel/projetos/lagoa_ingleses/results/figuras/2023/qualificacao/tileplots/tile_plot_campanhas.pdf",
          device = "pdf", units = "cm", height = 20, width = 30, dpi = 600)
