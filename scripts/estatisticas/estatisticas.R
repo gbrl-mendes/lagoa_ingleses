@@ -42,7 +42,7 @@
   {
     # Para 2020
     alpha_tbl_2020 <- raw_2020 %>%
-      # filter(`Relative abundance on sample` >= 0.01) %>% # heron pediu para manter as ASVs espurias
+      filter(`Relative abundance on sample` >= 0.01) %>% # filtrar
       filter(!`Curated ID` %in% c("Actinopteri", ## tirando as ASVs que nao foram identificadas a nivel de especie, nao-peixes e NA
                                   "Astyanax",
                                   "Characidae",

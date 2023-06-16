@@ -1,7 +1,11 @@
 Todo list:
 
-1) Fazer grafico alpha_all_ID_plot pra 2020 e 2021 separado;
+1) Fazer grafico alpha_all_ID_plot pra 2020 e 2021 separado; feito
 
 2) ver slides da bela para ter ideias sobre ASVs e OTUs
 
 2) Ver se precisa refazer plots sobre proporções de Ids e etc
+
+3/04
+
+1) transformar o plot de asvs_ponto em apenas ASVs oriundas das ids ao nível de especie para depois fazer o mesmo grafico ao nível de spp para comparar a quantidade de especies com de ASVs
