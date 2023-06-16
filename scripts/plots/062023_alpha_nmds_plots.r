@@ -6,7 +6,6 @@ date: "06/2023"
   
 # Carregando bibliotecas ----
 {
-  library(adespatial)
   library(Biostrings)
   library(DECIPHER)
   library(factoextra)
@@ -258,7 +257,7 @@ date: "06/2023"
     theme_minimal()
   
   ## Boxplot
-  boxplot_alfa <-
+  # boxplot_alfa <-
     index_merge_tbl %>% 
     ggplot(aes(x = Nivel,
                y = sobs,
@@ -301,7 +300,7 @@ date: "06/2023"
     with(split(`Curated ID`, 
                factor(Nivel, levels = unique(Nivel))))
   
-  venn_cheio_vazio <-
+  # venn_cheio_vazio <-
     list_nivel_id %>% 
     ggvenn(c("Cheio", "Vazio"),
            fill_color = c("#f8766d", "#00bfc4"),
