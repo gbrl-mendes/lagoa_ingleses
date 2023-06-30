@@ -64,7 +64,9 @@ date: "22/03/2023"
         "New_name",
         "Class",
         "Order",
-        "Abundance"
+        "Abundance",
+        "ASV header",
+        "ASV (Sequence)"
       )) %>% 
       group_by(Sample, `Curated ID`, Expedition, Point, Sample.Name, File_name, ) %>% 
       summarize(`Sample` = unique(Sample),
@@ -80,7 +82,10 @@ date: "22/03/2023"
                 `Sample.Name` = unique(Sample.Name),
                 `File_name` = unique(File_name),
                 `Abundance`,
-                `RRA` = sum(`Relative abundance on sample`)) %>%
+                `RRA` = sum(`Relative abundance on sample`),
+                `ASV header`,
+                `ASV (Sequence)`
+                ) %>%
       ungroup()
   }
   
@@ -142,17 +147,17 @@ date: "22/03/2023"
   
   # Definir quais serao as amostras e ordenar
   {
-    samples <- c("L1_nov21",
-                 "L1_out21",
-                 "L2_nov21",
+    samples <- c("L1_out21",
                  "L2_out21",
-                 "L3_nov21",
                  "L3_out21",
-                 "L4_nov21",
                  "L4_out21",
-                 "L1-neo-mi",
-                 "L2 Dez/20",
-                 "L2 Nov/20")
+                 "L1_nov21",
+                 "L2_nov21",
+                 "L3_nov21",
+                 "L4_nov21",
+                 "LI1-neo-mi",
+                 "L2_nov20",
+                 "L2_dez20")
   }
   
   # Definir quais serao as campanhas e ordenar
@@ -393,16 +398,14 @@ ggsave(plot = tile_plot_20, filename = "/home/gabriel/projetos/lagoa_ingleses/re
     tile_plot_all <-
       fish_ID_tbl %>% 
       filter(RRA >= 0.01) %>%
-      mutate(Expedition = factor(Expedition, levels = expeditions)) %>% 
-      mutate(Sample = factor(Sample, levels = samples)) %>% 
-      mutate(Point = factor(Point)) %>% 
-      mutate(File_name = factor(File_name)) %>% 
+      mutate(Expedition = factor(Expedition, levels = expeditions)) %>%
+      mutate(Sample = factor(Sample, levels = samples)) %>%
+      mutate(Point = factor(Point)) %>%
+      mutate(File_name = factor(File_name)) %>%
       mutate(`Order` = factor(`Order`)) %>%
-      group_by(Expedition, `Curated ID`, Point, New_name, Order, Nivel) %>%   # Agrupa por expedição, Curated ID e Point
-      filter(New_name %in% c("Ponte", "Fundacao")) %>%
-      # filter(Expedition %in% c("out/21", # deixando apenas as amostras de 2021
-      #                          "Nov/21"
-      # )) %>% 
+      group_by(Expedition, `Curated ID`, Point, New_name, Order, Nível) %>%   # Agrupa por expedição, Curated ID e Point
+      # filter(New_name %in% c("Ponte", "Fundacao")) %>%
+      filter(Sample %in% c("LI1-neo-mi", "L2_nov20", "L2_dez20", "L2_nov21", "L3_nov21", "L4_nov21")) %>%
       ggplot(aes(y = `Curated ID`, 
                  group = `Curated ID`, 
                  x = 
@@ -412,13 +415,12 @@ ggsave(plot = tile_plot_20, filename = "/home/gabriel/projetos/lagoa_ingleses/re
       geom_tile() +
       # geom_text(aes(label= sprintf("%0.2f", round(RRA, digits = 2))), # exibindo os valores de RRA dentro dos tiles para facilitar a discussao (opcional)
       #           colour = "black", size = 4) +
-      facet_grid(cols = vars(`Nivel`), 
+      facet_grid(cols = vars(`Nível`), 
                  rows = vars(`Order`),
                  space = "free_y", 
                  scales = "free_y",
                  drop = TRUE) +
-      # scale_x_discrete(limits = c("L1", "L2"), expand = c(0, 0)) +
-      scale_x_discrete(limits = c("Fundacao", "Ponte"), expand = c(0, 0)) + # exibindo apenas o 2 pontos que existem em comum nas duas campanhas
+      # scale_x_discrete(limits = c("Fundacao", "Ponte"), expand = c(0, 0)) + # exibindo apenas o 2 pontos que existem em comum nas duas campanhas
       labs(fill ='Abundância \nrelativa (%)',
            x = "Pontos",
            y= "Espécies") +
