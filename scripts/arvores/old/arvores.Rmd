@@ -38,48 +38,59 @@ library(RColorBrewer)
 
 {
 # Read DB
-db_fasta <- Biostrings::readDNAStringSet(filepath = "/home/heron/prjcts/fish_eDNA/DB/mai22/DB/LGC12Sdb_251seqs-mai22-pretty_names_noGaps.fasta") %>%
+db_fasta <- Biostrings::readDNAStringSet(filepath = "/home/heron/prjcts/eDNA_fish/DB/mai22/DB/LGC12Sdb_251seqs-mai22-pretty_names_noGaps.fasta") %>%
   DECIPHER::RemoveGaps()
 
 # Visualizar as seqs do db
 BrowseSeqs(db_fasta)
 
 # Read ASVs 
-asvs_fasta <- Biostrings::readDNAStringSet(filepath = "/home/gabriel/projetos/peixes-eDNA/analises/pipeline-modelo/results/pipeline-modelo-all_ASVs_all_primers.fasta") %>%
+asvs_fasta <- Biostrings::readDNAStringSet(filepath = "/home/gabriel/projetos/lagoa_ingleses/results/tree/2023/ASVs_001.fas") %>%
   DECIPHER::RemoveGaps()
 
 # Visualizar as seqs das ASVs
 BrowseSeqs(asvs_fasta)
 }
 
-# Selecionar a região do DB pertinente às ASVs ----
+# Alinhar as ASVs com DB ----
 
-{
-  # Alinhar as seqs do DB
+## Necessario para observar onde as ASVs irao alinha nas sequencias do DB
 
-db_fasta_algn <- DECIPHER::AlignSeqs(myXStringSet = db_fasta, 
+# ASVs versus DB 
+  dna_fasta <- c(db_fasta, asvs_fasta) %>% unique() %>% RemoveGaps()
+  
+# Alinhar as seqs do banco e das ASVs
+dna_fasta_algn <- DECIPHER::AlignSeqs(myXStringSet = dna_fasta, 
                                       refinements = 100,
                                       iterations = 100,
                                       verbose = TRUE)
 
-BrowseSeqs(db_fasta_algn)
-}
+# Checar o alinhamento
+BrowseSeqs(dna_fasta_algn)
 
+## Podemos ver que diversas ASVs alinharam-se a uma regiao diferente do DB.
+## Primeiro devemos cortar do DB a regiao alem da que foi alinhado o primer REV e depois retirar as ASVs nao alinhadas
+
+# Trim DB ----
 
 # Encontrar o primer nas seqs
 
-## Encontrar a região do primer reverse nas seqs,
-## deve ser feito manualmente :/ Ctrl+F no browser
+## Encontrar a região do primer reverse nas seqs, isso deve ser feito para alinhar as ASVs apenas na regiao adequada.
+## Deve ser feito manualmente :/ Ctrl+F no browser
 ## Identify informative region (EX: amplicon)
 
 ## Select MiFish Amplicon
 #FWD = GTCGGTAAAACTCGTGCCAGC 
 #REV = CATAGTGGGGTATCTAATCCCAGTTTG  
-  DNAStringSet("CATAGTGGGGTATCTAATCCCAGTTTG") %>% 
+DNAStringSet("CATAGTGGGGTATCTAATCCCAGTTTG") %>% 
   reverseComplement()
 #REV (rev comp) = CAAACTGGGATTAGATACCCCACTATG
 
 ## Based on your visualization, select only the region common to all species
+db_fasta_algn <- DECIPHER::AlignSeqs(myXStringSet = db_fasta, 
+                                      refinements = 100,
+                                      iterations = 100,
+                                      verbose = TRUE)
 DECIPHER::BrowseSeqs(db_fasta_algn)
 
 ## Procurar pela sequência acima no alinhamento dna_fasta_algn e definir
@@ -90,47 +101,6 @@ dna_fasta_algn_cut <- Biostrings::subseq(x = db_fasta_algn,start = 1, end = 251)
 
 # Visualizar o alinhamento do DB após o corte
 BrowseSeqs(dna_fasta_algn_cut)
-
-# Combinar os arquivos e sequências requeridas ----
-
-# dna_fasta <- c(dna_fasta_1,dna_fasta_2)
-
-{
-  dna_fasta <- c(dna_fasta_algn_cut, asvs_fasta) %>% unique() %>% RemoveGaps()
-
-# Check DNA seqs 
-dna_fasta
-
-# Check their name 
-BrowseSeqs(dna_fasta)
-}
-
-# Alinhar as seqs do banco e das ASVs
-dna_fasta_algn_pr <- DECIPHER::AlignSeqs(myXStringSet = dna_fasta, 
-                                      refinements = 100,
-                                      iterations = 100,
-                                      verbose = TRUE)
-
-# Checar o alinhamento
-BrowseSeqs(dna_fasta_algn_pr)
-
-# Alterar os nomes (optional) ----
-
-## all together
-
-  # dna_fasta <- names(dna_fasta) %>% str_remove(pattern = "SF \\| |JQ \\| ")
-
-## Only some (two ways of subsetting)
-
-  # names(dna_fasta)[10]
-# names(dna_fasta)[10] <- "P.costatus"
-
-  # names(dna_fasta[10])
-# names(dna_fasta[10]) <- "P.costatus2"
-
-# names(dna_fasta[10]) <- 
-  # names(dna_fasta[10]) %>% str_replace(pattern = "Prochilodus",
-                                   # replacement = "P.")
 
 # Orient nucleotides ----
 

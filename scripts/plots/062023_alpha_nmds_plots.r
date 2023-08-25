@@ -140,11 +140,12 @@ date: "06/2023"
   longer_tbl_IDS <- 
     fish_ID_tbl %>%
     filter(RRA >= 0.01) %>% # definicao de qual threshold de abundancia sera usado
-    select(c("Sample", "Curated ID", "Point", "Year", "Nivel", "New_name", "RRA")) %>%
+    select(c("Sample", "Curated ID", "Point", "Year", "Nível", "New_name", "RRA")) %>%
     unique() %>% 
-    mutate("New_name" = as.factor(New_name)) %>% 
-    rename("Nivel" = "Nivel") %>%
-    mutate("Nivel" = as.factor(Nivel)) 
+    mutate("New_name" = as.factor(New_name)) %>%
+    filter(Sample %in% c("LI1-neo-mi", "L2_nov20", "L2_dez20", "L2_nov21", "L3_nov21", "L4_nov21")) %>% #com apenas as amostras que Daniel pediu
+    rename("Nivel" = "Nível") %>%
+    mutate("Nivel" = as.factor(Nivel))
 }
     
 
@@ -276,7 +277,8 @@ date: "06/2023"
           legend.text = element_text(size = 13),
           legend.position = "right")
   
-  # Salvar em pdf
+}  
+    # Salvar em pdf
   ggsave(plot =  boxplot_alfa, 
          filename = paste("/home/gabriel/projetos/lagoa_ingleses/results/figuras/2023/alfa_d/",
                           "alfa-d_boxplot_cheio-vazio", "-", Sys.Date(), ".pdf", sep = ""),
@@ -285,7 +287,7 @@ date: "06/2023"
          height = 30,
          width = 19,
          dpi = 600) 
-}
+
 
 ## Diagrama de Venn
 {
@@ -304,7 +306,7 @@ date: "06/2023"
     list_nivel_id %>% 
     ggvenn(c("Cheio", "Vazio"),
            fill_color = c("#f8766d", "#00bfc4"),
-           text_size = 8,
+           text_size = 6,
            set_name_size = 18,
            show_elements = TRUE,
            label_sep = "\n"
@@ -321,8 +323,6 @@ date: "06/2023"
          width = 45,
          dpi = 600)
   }
-
- 
 
 
 ## NMDS ----
@@ -354,18 +354,19 @@ date: "06/2023"
   FINAL_tbl_IDs <- fish_ID_tbl %>%
     # filter(Year %in% c("2021")) %>% # definir qual ano entrara na analise
     filter(RRA >= 0.01) %>% # definicao de qual threshold de abundancia sera usado
-    # filter(New_name %in% c("Ponte", "Fundacao")) %>% # definicao de qual threshold de abundancia sera usado
-    select(c("Sample", "Curated ID", "Point", "Year", "Nivel", "New_name", "RRA")) %>% 
-    pivot_wider(id_cols = c("Sample", "Point", "Year", "Nivel", "New_name"),
+    # filter(New_name %in% c("Ponte", "Fundacao")) %>% 
+    filter(Sample %in% c("LI1-neo-mi", "L2_nov20", "L2_dez20", "L2_nov21", "L3_nov21", "L4_nov21")) %>% #com apenas as amostras que Daniel pediu
+    select(c("Sample", "Curated ID", "Point", "Year", "Nível", "New_name", "RRA")) %>% 
+    pivot_wider(id_cols = c("Sample", "Point", "Year", "Nível", "New_name"),
                 names_from = `Curated ID`,
                 values_from = `RRA`,
                 values_fn = sum_uniq,
                 names_sort = TRUE,
                 names_prefix = "ID_") %>% 
-    relocate(c("Sample", "Point", "Year", "Nivel", "New_name", starts_with("ID_"))) %>%  
+    relocate(c("Sample", "Point", "Year", "Nível", "New_name", starts_with("ID_"))) %>%  
     mutate(across(starts_with("ID_"), replace_na, replace = 0)) %>% 
     mutate("New_name" = as.factor(New_name)) %>% 
-    mutate("Nivel" = as.factor(Nivel)) 
+    mutate("Nível" = as.factor(Nível)) 
   
   # Verificando a soma das linhas
   FINAL_tbl_IDs %>% select(starts_with(match = "ID_")) %>% rowSums(na.rm = TRUE)
@@ -415,7 +416,7 @@ date: "06/2023"
   dim(all_IDs_NMDS_df)
 
   # Fazer o fit das variáveis ambientais
-  meta.envfit <- envfit(all_ps_vegan_ord_meta, all_IDs_NMDS_df[, c("Nivel", "Sample")],
+  meta.envfit <- envfit(all_ps_vegan_ord_meta, all_IDs_NMDS_df[, c("Nível", "Sample")],
                         permutations = 999,
                         na.rm=TRUE) # this fits environmental vectors
   
@@ -448,7 +449,7 @@ date: "06/2023"
     mutate("Sample number" = as.double(row.names(.))) %>%
     left_join(y = all_IDs_NMDS_df[, c("Sample number",
                                       "Sample",
-                                      "Nivel",
+                                      "Nível",
                                       "New_name"
                                       )], 
               by = "Sample number")
@@ -456,14 +457,14 @@ date: "06/2023"
   # Determinar centroides
   scrs <- scores(all_ps_vegan_ord_meta, display = "sites")
   
-  cent <- aggregate(scrs ~ Nivel, data = site.scrs, FUN = "mean")
+  cent <- aggregate(scrs ~ Nível, data = site.scrs, FUN = "mean")
   
   # Calcular elipses
   NMDS <- data.frame("MDS1" = all_ps_vegan_ord_meta$points[, 1],
                      "MDS2" = all_ps_vegan_ord_meta$points[, 2],
-                     "Nivel" = as.factor(all_IDs_NMDS_df$Nivel), check.names = FALSE)
+                     "Nível" = as.factor(all_IDs_NMDS_df$Nível), check.names = FALSE)
   
-  NMDS.mean <- aggregate(NMDS[, 1:2], list(group = NMDS$Nivel), "mean")
+  NMDS.mean <- aggregate(NMDS[, 1:2], list(group = NMDS$Nível), "mean")
 }
 
 # Elipses
@@ -473,7 +474,7 @@ date: "06/2023"
   
   # Sobrepor as elipses
   ord <- ordiellipse(ord = all_ps_vegan_ord_meta, 
-                     groups = all_IDs_NMDS_df$Nivel,
+                     groups = all_IDs_NMDS_df$Nível,
                      display = "sites",
                      kind = "ehull", conf = 0.95, label = T)
   
@@ -488,16 +489,16 @@ date: "06/2023"
   
   df_ell <- data.frame()
   
-  for(g in levels(NMDS$Nivel)){
+  for(g in levels(NMDS$Nível)){
     print(g)
     df_ell <- 
       rbind(df_ell, 
-            cbind(as.data.frame(with(NMDS[NMDS$Nivel==g,],
+            cbind(as.data.frame(with(NMDS[NMDS$Nível==g,],
                                                      veganCovEllipse(
                                                        ord[[g]]$cov,
                                                        ord[[g]]$center,
                                                        ord[[g]]$scale))),
-                  Nivel=g))}
+                  Nível=g))}
 }
 
 # Configurar plot NMDS
@@ -528,10 +529,10 @@ date: "06/2023"
                                data = df_ell,
                                aes(x = NMDS1,
                                    y = NMDS2,
-                                   group = Nivel,
-                                   label = Nivel,
-                                   col = Nivel,
-                                   fill = Nivel
+                                   group = Nível,
+                                   label = Nível,
+                                   col = Nível,
+                                   fill = Nível
                                ), 
                                alpha=0.10,
                                # n = 200,
@@ -543,10 +544,10 @@ date: "06/2023"
     # Niveis amostrais
     geom_point(aes(x=NMDS1,
                    y=NMDS2,
-                   fill = Nivel,
-                   # label = `Sampling unit`,                                     #descomentar se quiser exibir os nomes dos `Sampling sites`s
-                   col=Nivel,
-                   group = Nivel,
+                   fill = Nível,
+                   # label = `Sampling unit`,  #descomentar se quiser exibir os nomes dos `Sampling sites`s
+                   col=Nível,
+                   group = Nível,
                    shape = New_name),
                stroke = 0.5,
                alpha = 0.75,
@@ -587,8 +588,8 @@ date: "06/2023"
     # Centroides
     geom_point(data = cent,
                aes(x = NMDS1,
-                   y = NMDS2, # colour = Nivel,
-                   fill = Nivel
+                   y = NMDS2, # colour = Nível,
+                   fill = Nível
                ),
                size = 8,
                colour = "#222222",
