@@ -104,12 +104,13 @@ algn_ASVs_12sDB <- ASVs_12sDB %>%
 
 BrowseSeqs(algn_ASVs_12sDB) 
 
-# Ao abrir o alinhamento, descobri que as ASVs se alinham do nucleotidio 34 ao 246.
+# Ao abrir o alinhamento, descobri que as ASVs se alinham do nucleotideo 34 ao 246.
 # Tambem pude observar ASVs que estao alinhando-se em outra regiao do DB. Elas devem ser retiradas.
+# Presumimos que sao sequencias produzidas com o primer 
 asvs_to_remove <- c("ASV_384_175bp|Rhamdia_quelen",
                   "ASV_15_167bp|Moenkhausia_costae",
                   "ASV_326_175bp|Hoplias_spp.", 
-                  "ASV_201_172bp|Hoplias_malabaricus",
+                  "ASV_201_172bp|Hoplias_malabaricus",  
                   "ASV_146_170bp|Coptodon_sp.")
 
 # Filtrando as ASVs
