@@ -66,9 +66,19 @@ date: "22/03/2023"
   # Nova correcao de nomes
   # Ver o documento Verificacao das identificacoes do DADA2
   # Substituindo o nome de todas ASVs 
-  raw_results_tbl$`Curated ID`[raw_results_tbl$`Curated ID` %in% c("Hoplias brasiliensis")] <- "Hoplias sp." # Ver artigo do Heron 2023
-  raw_results_tbl$`Curated ID`[raw_results_tbl$`Curated ID` %in% c("Hoplias intermedius")] <- "Hoplias sp." # Ver artigo do Heron 2023
-  raw_results_tbl$`Curated ID`[raw_results_tbl$`Curated ID` %in% c("Astyanax fasciatus")] <- "Psalidodon fasciatus" # A. fasciatus. por Psalidodon fasciatus
+  {
+    raw_results_tbl$`Curated ID`[raw_results_tbl$`Curated ID` %in% c("Hoplias brasiliensis")] <- "Hoplias sp." # Ver artigo do Heron 2023
+    raw_results_tbl$`Curated ID`[raw_results_tbl$`Curated ID` %in% c("Hoplias intermedius")] <- "Hoplias sp." # Ver artigo do Heron 2023
+    raw_results_tbl$`Curated ID`[raw_results_tbl$`Curated ID` %in% c("Hoplias spp.")] <- "Hoplias sp." # Corrigir o nome
+    raw_results_tbl$`Curated ID`[raw_results_tbl$`Curated ID` %in% c("Astyanax fasciatus")] <- "Psalidodon fasciatus" # A. fasciatus. por Psalidodon fasciatus
+    raw_results_tbl$`Curated ID`[raw_results_tbl$`Curated ID` %in% c("Astyanax lacustris")] <- "Astyanax sp." # A. fasciatus. por Psalidodon fasciatus
+    raw_results_tbl$`Curated ID`[raw_results_tbl$`Curated ID` %in% c("Astyanax spp.")] <- "Astyanax sp." # A. fasciatus. por Psalidodon fasciatus
+    raw_results_tbl$`Curated ID`[raw_results_tbl$`Curated ID` %in% c("Pimelodus fur")] <- "Pimelodus sp." # Baixa resolucao pra Pimelodus
+    raw_results_tbl$`Curated ID`[raw_results_tbl$`Curated ID` %in% c("Pimelodus maculatus")] <- "Pimelodus sp." # Baixa resolucao pra Pimelodus
+    raw_results_tbl$`Curated ID`[raw_results_tbl$`Curated ID` %in% c("Pimelodus pohli")] <- "Pimelodus sp." # Baixa resolucao pra Pimelodus
+    raw_results_tbl$`Curated ID`[raw_results_tbl$`Curated ID` %in% c("Pimelodus spp.")] <- "Pimelodus sp." # Corrigir o nome
+  }
+  
   
   # Substituindo ASVs especificas
   raw_results_tbl <- # Orthospinus por Moenkhausia
@@ -231,7 +241,7 @@ date: "22/03/2023"
                                    levels = rev(spp_fish))) %>% 
       mutate(`Order` = factor(`Order`,
                               levels = fish_ordens)) %>%
-      mutate('Nível' = ifelse(`Year` == "2020", ## com essa linha a gente inclui o nivel da lagoa
+      mutate('Nivel' = ifelse(`Year` == "2020", ## com essa linha a gente inclui o nivel da lagoa
                                       "Cheio", "Vazio")) %>%
       filter(`Curated ID` != "") %>%
       filter(!is.na(`Curated ID`)) %>% 
@@ -590,18 +600,17 @@ ggsave(plot = tile_plot_20, filename = "/home/gabriel/projetos/lagoa_ingleses/re
   ggsave(plot = tile_plot_campanhas, filename = "/home/gabriel/projetos/lagoa_ingleses/results/figuras/2023/qualificacao/tileplots/tile_plot_campanhas.pdf",
          device = "pdf", units = "cm", height = 20, width = 30, dpi = 600)
 
-## vazio versus cheio
+## vazio versus cheio (versao SBG)
   
   {
-    cheio_vs_vazio <-
-      fish_ID_tbl %>%
-      filter(RRA >= 0.01) %>%
+    cheio_vs_vazio <- fish_ID_tbl %>%
+      filter(RRA >= 1) %>%
       mutate(Expedition = factor(Expedition, levels = expeditions)) %>% 
       mutate(Sample = factor(Sample, levels = samples)) %>% 
       mutate(Point = factor(Point)) %>% 
       mutate(File_name = factor(File_name)) %>% 
       mutate(`Order` = factor(`Order`)) %>%
-      group_by(Expedition, `Curated ID`, Point, New_name, Order, Nível) %>%   # Agrupa por expedição, Curated ID e Point
+      group_by(Expedition, `Curated ID`, Point, New_name, Order, Nivel) %>%   # Agrupa por expedição, Curated ID e Point
       # filter(New_name %in% c("Ponte", "Fundacao")) %>%
       ggplot(aes(y = `Curated ID`, 
                  group = `Curated ID`,
@@ -611,19 +620,20 @@ ggsave(plot = tile_plot_20, filename = "/home/gabriel/projetos/lagoa_ingleses/re
       # geom_text(aes(label= sprintf("%0.2f", round(RRA, digits = 2))), # exibindo os valores de RRA dentro dos tiles para facilitar a discussao (opcional)
                 # stat = "identity",
                 # colour = "black", size = 4) +
-      facet_grid(cols = vars(Nível),
-                 labeller = labeller(Nível = c("Cheio" = "Full", "Vazio" = "Empty")),
+      facet_grid(cols = vars(Nivel),
+                 labeller = labeller(Nivel = c("Cheio" = "Full", "Vazio" = "Empty")),
                  rows = vars(`Order`),
                  space = "free", 
                  scales = "free",
                  drop = TRUE) +
       labs(fill ='Relative \nabundance (%)',
-           x = "Points",
+           x = "Sample points",
            y= "Species") +
       ggtitle(label = "Espécies detectadas: Lagoa cheia e vazia") +
       scale_fill_continuous(
         trans = "log10",
-        breaks = c( 0.001, 1, 75),
+        # breaks = c( 0.001, 1, 75),
+        breaks = c(10, 90),
         type = "viridis") +
       theme(plot.title = element_text(size = 25, face = "bold", hjust=0.7),
             axis.text.x = element_text(size = 13, face = "bold", angle = 45, hjust = 1, vjust = 1),
