@@ -1,0 +1,1560 @@
+
+## NMDSs
+
+```{r,echo=TRUE, eval=FALSE}
+
+FINAL_TBL$`Sample`%>% unique()
+FINAL_TBL$`Sample name`%>% unique() %>% sort()
+
+#remover amostras que possam atrapalhar no NMDS ----
+amostras_removidas <- c(
+  # "A08-C1",
+  # "A09-C1",
+  # "A10-C1",
+  # "A10-C2",
+  # # "A11-C2"
+  # "A11-C1",
+  # "A12-C1",
+  # "A22-C1",
+  # "A25-C1",
+  # "A18-C1"
+)
+
+# converter a tabela final de resultados para o formato amplo, compatível com o NMDS ----  
+{
+  
+  FINAL_tbl_IDs <- FINAL_TBL %>%
+    ###_______________remover amostras que atrapalham a visualização_______________###
+    filter(!`Sample name` %in% amostras_removidas) %>%
+    dplyr::select(-c(      
+      # "Unique ID",      # este é nosso identificador único  de cada ponto amostral campo
+      "Unique_File_name", # esse é o identificador unico de cada subamostra de um mesmo ponto
+      # "Sample",
+      # "Primer name",
+      # "Longitude",
+      # "Latitude",
+      # "Date",
+      "Researcher",
+      # "Estado",
+      # "Status",
+      # "Environment (material)",
+      # "Marker",
+      "Identification Max. taxonomy",
+      # "Clean relative abd. on Sampling Unit by marker",
+      # "Num. of replicates in Sampling Unit by marker",
+      "Total clean sample abd. by marker",
+      "Total clean sample abd.",
+      ###____________________podemos soma a abd por qqr classe dessas_______________
+      ###____________________basta comentar aqui e substituir em     _______________
+      ###____________________      names_from = `NOME DA COLUNA`,    _______________
+      "OTU",
+      "Superkingdom (BLASTn)",
+      "Kingdom (BLASTn)",
+      "Phylum (BLASTn)",
+      "Subphylum (BLASTn)",
+      "Class (BLASTn)",
+      "Subclass (BLASTn)",
+      "Order (BLASTn)",
+      "Suborder (BLASTn)",
+      "Family (BLASTn)",
+      "Subfamily (BLASTn)",
+      "Genus (BLASTn)",
+      "Final ID (BLASTn)",
+      # "OTU_ID",
+      # "BLASTn pseudo-score",
+      # "Curated ID",                            # estamos usando essa
+      ###____________________      outros campos que não precisamos    _______________
+      # "Comentário Curador",
+      # "Curador",
+      # "Clean relative abd. on sample", 
+      "Relative abundance on sample",         
+      "Total clean sample abd. by marker",             # abundancia total da amostra
+      "ASV absolute abundance",    #abundancia absoluta
+      "ASV Size (pb)",
+      "Primer expected length",
+      "Type",
+      ###____________________      infos das IDs do BLASTn    ______________________
+      "1_subject header","1_subject","1_indentity","1_qcovhsp","1_length","1_mismatches","1_gaps",
+      "1_query start","1_query end","1_subject start","1_subject end","1_e-value","1_bitscore", "1_staxid",
+      "2_subject header","2_subject","2_indentity","2_qcovhsp","2_length","2_mismatches","2_gaps",
+      "2_query start","2_query end","2_subject start","2_subject end","2_e-value","2_bitscore", "2_staxid",
+      "3_subject header","3_subject","3_indentity","3_qcovhsp","3_length","3_mismatches","3_gaps",
+      "3_query start","3_query end","3_subject start","3_subject end","3_e-value","3_bitscore", "3_staxid",
+      ###____________________      Sequencia da ASV    _____________________________
+      "ASV (Sequence)", "ASV header",
+      
+      ###________________ outras infos tecnicas _________________
+      # "Project",
+      # "Sample",
+      "Read origin",
+      "Relative abundance to all samples",
+      "Sample total abundance",
+      # "Metadata 1",
+      # "Metadata 2",
+      # "Metadata 3",
+      # "Metadata 4",
+      # "Metadata 5",
+      # "Metadata 6",
+      "obs", 
+      "Possible Metazoa",
+      "BLAST ID", 
+      "blast ID Origin",
+      "ID status", 
+      "Contamination status", 
+      # "max_tax",
+      "Contamination control",
+      "PCR control",
+      "Filt. control",
+      "Prop. to PCR control",
+      "Prop. to Ext control",
+      "Prop. to Filt control"
+    )) %>% 
+    pivot_wider(                                #pivotando as IDs de linhas pra colunas
+      id_cols = c(
+        # "Sample",
+        "Sample name",
+        "Metadata 1", 
+        "Metadata 2", 
+        "Metadata 3", 
+        "Metadata 4", 
+        "Metadata 5", 
+        "Metadata 6",
+        "Metadata 7",
+        "Metadata 8",
+        "Metadata 9",
+        "Metadata 10",
+        "Metadata 11",
+        "Metadata 12",
+        # "Longitude",
+        # "Latitude",
+        # "Data da Coleta",
+        # "Local",
+        # "Tratamento",
+        # "Estágio",
+        "Project"
+        # "Marker",
+        # "target_gene",
+        # "ID status"
+      ),
+      values_from ="Clean relative abd. on sample",            #utilizando abundancias Identificadas
+      # values_from ="ASV rel. abd. in Sampling Unit by marker",
+      values_fn = sum_uniq,
+      names_from = Identification,
+      names_sort = TRUE,
+      names_prefix = "ID_"
+    ) %>% 
+    # relocate(c("Sample",
+    relocate(c("Sample name",
+               "Metadata 1", 
+               "Metadata 2", 
+               "Metadata 3", 
+               "Metadata 4", 
+               "Metadata 5", 
+               "Metadata 6",
+               "Metadata 7",
+               "Metadata 8",
+               "Metadata 9",
+               "Metadata 10",
+               "Metadata 11",
+               "Metadata 12",
+               # "Data da Coleta",
+               # "Local",
+               # "Tratamento",
+               # "Estágio",
+               # "Longitude",
+               # "Latitude",
+               "Project",
+               starts_with("ID_")
+    )) %>%  
+    mutate(dplyr::across(starts_with("ID_") , replace_na, replace = 0)) 
+  
+  # %>% 
+  # filter(rowSums(across(starts_with("ID_")))!=0)
+  
+  
+  
+  
+  FINAL_tbl_IDs %>% 
+    filter(`Sample name` %in% c("A27-C2")) %>% 
+    select(where( ~ is.numeric(.x) && sum(.x) != 0))
+  
+  
+  
+  FINAL_tbl_IDs %>% 
+    filter(rowSums(across(starts_with("ID_")))==0) %>% 
+    # pull(Project)
+    pull(`Sample name`)
+  
+  
+  colnames(FINAL_tbl_IDs)
+  
+  
+  # if ( all(unique(FINAL_tbl_IDs$Estado) ==  c("São Paulo", "Minas Gerais", "Rio de Janeiro")) |
+  #      all(unique(FINAL_tbl_IDs$Estado) ==  c("SP", "MG", "RJ"))){
+  #   
+  #   estado <- "Todos"
+  #   }else{
+  #     estado <-   unique(FINAL_tbl_IDs$Estado)
+  #     }
+  #   
+  #   estado
+  #  
+  # if ( all(unique(FINAL_tbl_IDs$`Environment (material)`) ==  c("Water", "Soil"))){
+  #   
+  #   EnvMat <- ""
+  #   }else if (unique(FINAL_tbl_IDs$`Environment (material)`) ==  c("Water")){
+  #     EnvMat <- "Agua"
+  #     }else if (unique(FINAL_tbl_IDs$`Environment (material)`) ==  c("Soil")){
+  #       EnvMat <- "Solo"
+  #       }
+  #   
+  #   EnvMat
+  
+  
+  # Verificar a soma das colunas, só é esperado resultado = 1 se não tiver filtros e usar a ABD ñ clean! 
+  # FINAL_tbl_IDs
+  
+  # 
+  FINAL_tbl_IDs %>%
+    select(starts_with(match = "ID")) %>%
+    rowSums() %>% plot()
+  # 
+  # # 
+  FINAL_tbl_IDs %>%
+    select(starts_with(match = "ID")) %>%
+    colSums() %>% plot()
+  # # 
+  # # # 
+  # FINAL_tbl_IDs %>%
+  #     select(starts_with(match = "ID")) %>%
+  #   colSums() %>% sort(decreasing = F)
+  # # 
+  #  FINAL_tbl_IDs %>%
+  #   mutate("SOMA" = rowSums(select(.,starts_with(match = "ID")) )) %>%
+  #   relocate("SOMA") %>%
+  #   View()
+  # 
+  # 
+  # 
+  # 
+  # tabela %>% 
+  #   group_by("Classe") %>% 
+  #   summarize("Num. ASVs" =  length(unique("ASV")))
+  
+  #NMDS ----
+  
+  
+  #refs
+  # https://rpubs.com/CPEL/NMDS
+  # 
+  #
+  
+  
+  
+  
+  # 
+  # FINAL_tbl_IDs$Marker %>% table()
+  
+  #1- prepare data for entry in vegan ----
+  # colnames(FINAL_tbl_IDs)
+  
+  all_IDs_NMDS_tbl <- FINAL_tbl_IDs %>% 
+    mutate("Sample number" = 0) %>%
+    relocate(
+      `Sample number`)
+  #2- associate sample numbers to sample names ----
+  for (sample in 1:nrow(all_IDs_NMDS_tbl)) {
+    
+    all_IDs_NMDS_tbl$`Sample number`[sample] <- sample
+    
+  }
+  
+  
+  # colnames(all_IDs_NMDS_tbl) 
+  # colnames(all_IDs_NMDS_tbl) %>% head(12)
+  
+  
+  #ordenar df usada no NMDS ----
+  all_IDs_NMDS_df <- all_IDs_NMDS_tbl %>% 
+    # select(base::sort(colnames(.))) %>%
+    # relocate(c("Sample number","Sample",
+    #           
+    #           "Metadata 1", 
+    #           "Metadata 2", 
+    #           "Metadata 3", 
+    #           "Metadata 4", 
+    #           "Metadata 5", 
+    #           "Metadata 6",
+    #           "Metadata 7",
+    #           "Metadata 8",
+  #           "Metadata 9",
+  #           "Metadata 10",
+  #            "Project"
+  #            )) %>%
+  as.data.frame() 
+  
+  #4- name rows as Sample numbers and remove column ----
+  row.names(all_IDs_NMDS_df) <- all_IDs_NMDS_df$`Sample number`
+  
+  all_IDs_NMDS_df %>% dim()
+  
+  
+  colnames(all_IDs_NMDS_df)
+  # correct species names to avoid problems in ploting
+  
+  colnames(all_IDs_NMDS_df)[16:ncol(all_IDs_NMDS_df)] <- colnames(all_IDs_NMDS_df)[16:ncol(all_IDs_NMDS_df)] %>%
+    str_replace_all(pattern = " ",replacement = "_") %>% 
+    str_replace_all(pattern = "\\.",replacement = "") %>% 
+    str_replace_all(pattern = "\\(",replacement = "") %>% 
+    str_replace_all(pattern = "\\)",replacement = "")
+  
+  
+  
+  
+  
+  
+  all_ps_vegan_ord_meta <- metaMDS(veg = all_IDs_NMDS_df[,16:ncol(all_IDs_NMDS_df)],
+                                   comm = all_IDs_NMDS_df[,16:ncol(all_IDs_NMDS_df)],
+                                   distance = "bray"
+                                   # distance = "jaccard"
+  )
+  
+  plot(all_ps_vegan_ord_meta)
+  
+  dim(all_IDs_NMDS_df)
+  
+  #retirado daqui!!!!!!!!!!!!!!!!!!!!       https://www.rpubs.com/RGrieger/545184
+  
+  # meta.envfit <- envfit(all_ps_vegan_ord_meta, all_IDs_NMDS_df[,c("Estado", "Status")], permutations = 999) # this fits environmental vectors
+  # meta.envfit <- envfit(all_ps_vegan_ord_meta, all_IDs_NMDS_df[,c("Tratamento", "Estágio")], permutations = 999) # this fits environmental vectors
+  meta.envfit <- envfit(all_ps_vegan_ord_meta, 
+                        all_IDs_NMDS_df[,c("Metadata 9", "Metadata 11","Metadata 6","Metadata 7")], 
+                        permutations = 999,
+                        na.rm=TRUE) # this fits environmental vectors
+  
+  
+  
+  # esse é o passo que mais demora
+  meta.spp.fit <- envfit(all_ps_vegan_ord_meta, all_IDs_NMDS_df[,16:ncol(all_IDs_NMDS_df)], permutations = 999) # this fits species vectors
+  
+  
+  
+  
+  ## envfit in parallel??----
+  
+  # 
+  #   future::plan(future::multisession(),      workers = 10)
+  #   
+  # meta.spp.fit2 <- furrr::future_map_dfc(.x = all_IDs_NMDS_df[,11:15],
+  #                                        .f = vegan::envfit,
+  #                                        ord = all_ps_vegan_ord_meta, 
+  #                                        permutations = 999,
+  #                                        .options = furrr::furrr_options(seed = TRUE))
+  #   all_ps_vegan_ord_meta$species
+  
+  
+  ## ----
+  
+  
+  
+  
+  
+  
+  site.scrs <- as.data.frame(scores(all_ps_vegan_ord_meta, display = "sites")) %>% 
+    mutate("Sample number" = as.double(row.names(.))) %>% 
+    # left_join(y = all_IDs_NMDS_df[,c("Sample",
+    left_join(y = all_IDs_NMDS_df[,c("Sample name",
+                                     "Sample number",
+                                     "Metadata 2",
+                                     "Metadata 3",
+                                     "Metadata 4",
+                                     "Metadata 5",
+                                     "Metadata 6",
+                                     "Metadata 7",
+                                     "Metadata 8",
+                                     "Metadata 9",
+                                     "Metadata 10",
+                                     "Metadata 11",
+                                     "Metadata 12"
+    )],
+    by = "Sample number") 
+  # %>% 
+  #   mutate("Unique ID" = str_replace_all(string = `Unique ID`,
+  #                                        pattern = "SAMPLE_[0-9]++-",replacement = ""))
+  
+  site.scrs
+  
+  # determinar centroides ----
+  scrs <-
+    scores(all_ps_vegan_ord_meta, display = "sites")
+  
+  cent <-
+    aggregate(scrs~`Metadata 9`,data = site.scrs, FUN = "mean")
+  # %>% 
+  #   mutate(Status =  factor(Status, levels = c("Sem intervenção", "Com intervenção","Unidade de Conservação")))
+  
+  
+  #get species pvalues ----
+  sps_pvals <- tibble("IDs" = names(meta.spp.fit$vectors$pvals),
+                      "p-value" = meta.spp.fit$vectors$pvals)
+  
+  
+  spp.scrs <- as.data.frame(scores(meta.spp.fit, display = "vectors")) %>% 
+    mutate("IDs" = rownames(.)) %>% 
+    left_join(y = sps_pvals, by = "IDs")
+  
+  sig.spp.scrs <- spp.scrs %>% 
+    filter(`p-value` <=0.05)                   # selecionar para mostrar apenas sps com pval significativo
+  
+  
+  
+  
+  #calculate ellipses ----
+  NMDS <- data.frame("MDS1" = all_ps_vegan_ord_meta$points[,1], 
+                     "MDS2" = all_ps_vegan_ord_meta$points[,2],
+                     "Metadata 9"= as.factor(all_IDs_NMDS_df$`Metadata 9`),
+                     check.names = FALSE)
+  # "StatEstado"= as.factor(all_IDs_NMDS_df$StatEstado))
+  
+  NMDS.mean <- aggregate(NMDS[,1:2],list(group=NMDS$`Metadata 9`),"mean")
+  # NMDS.mean=aggregate(NMDS[,1:2],list(group=NMDS$StatEstado),"mean")
+  
+  
+  
+  
+  
+  # funçaõ do vegan de calcular ellipses
+  veganCovEllipse<-function (cov, 
+                             center = c(0, 0), 
+                             scale = 1, 
+                             npoints = 100) 
+  {
+    theta <- (0:npoints) * 2 * pi/npoints
+    Circle <- cbind(cos(theta), sin(theta))
+    t(center + scale * t(Circle %*% chol(cov)))
+  }
+  
+  # dev.off()
+  # dev.off()
+  plot(all_ps_vegan_ord_meta)
+  
+  ord <- ordiellipse(ord = all_ps_vegan_ord_meta, 
+                     groups = all_IDs_NMDS_df$`Metadata 9`,
+                     # groups = all_IDs_NMDS_df$StatEstado,
+                     display = "sites",
+                     kind = "ehull", conf = 0.95, label = T)
+  
+  
+  # fit <- envfit(all_ps_vegan_ord_meta~Al,varechem,perm=999,display="lc")
+  
+  # vegan::ordiarrows(ord = all_ps_vegan_ord_meta,
+  #                   groups = 
+  #                     )
+  
+  df_ell <- data.frame()
+  
+  for(g in levels(NMDS$`Metadata 9`)){
+    df_ell <- rbind(df_ell, cbind(as.data.frame(with(NMDS[NMDS$`Metadata 9`==g,],
+                                                     veganCovEllipse(cov = ord[[g]]$cov,
+                                                                     center = ord[[g]]$center,
+                                                                     scale = ord[[g]]$scale))),
+                                  "Metadata 9"=g))
+    # StatEstado=g))
+  }
+  
+  # df_ell <- df_ell 
+  # %>% 
+  #   mutate(Status =  factor(Status, levels = c("Unidade de Conservação", "Com intervenção","Sem intervenção")))
+  
+  
+  
+  # fazer o grafico ----
+  
+  # library(ggalt)
+  # 
+  # # 
+  # colorblindcheck::palette_check(c("#fcca03","#6b0000","#02cc37"), plot = TRUE)
+  # colorblindcheck::palette_check(c("#D7E405","#9C0000","#17B102"), plot = TRUE)
+  
+  # site.scrs <- site.scrs 
+  # %>% 
+  #   mutate(Status =  factor(Status, levels = c("Unidade de Conservação", "Com intervenção","Sem intervenção")))
+  
+  
+  paste0(unique(all_IDs_NMDS_df$`Metadata 2`),collapse = " / ")
+  
+  manual_NMDS_plot <-
+    ggplot(data = site.scrs, 
+           aes(x=NMDS1, 
+               y=NMDS2)) +
+    #elipses ####
+  ggforce::geom_mark_ellipse(inherit.aes = FALSE,
+                             data = df_ell,
+                             aes(x = NMDS1,
+                                 y = NMDS2,
+                                 group=`Metadata 9`,
+                                 label=`Metadata 9`,
+                                 col =`Metadata 9`,
+                                 fill =`Metadata 9`
+                             ),
+                             alpha=0.15,
+                             # n = 200, 
+                             linetype=2,
+                             expand = 0,
+                             label.fontsize = 18,
+                             con.cap = 0.1
+  ) +
+    #hulls #########
+  # ggforce::geom_mark_hull(aes(fill=Metadata.2),
+  #                         concavity = 5,
+  #                         expand=0,
+  #                         radius=0,
+  #                         linetype=0,
+  #                         alpha=0.15
+  #                         )+
+  #vetores das IDs
+  geom_segment(data = sig.spp.scrs, aes(x = 0,
+                                        xend=NMDS1,
+                                        y=0,
+                                        yend=NMDS2),
+               arrow = arrow(length = unit(0.1, "cm")),
+               colour = "grey10",
+               alpha=0.1,
+               lwd=0.3) + #add vector arrows of significant species
+    # #nomes das IDs
+    ggrepel::geom_text_repel(data = sig.spp.scrs,
+                             aes(x=NMDS1, y=NMDS2, label = IDs),
+                             size=2,
+                             alpha= 0.75,
+                             # cex = 5,
+                             direction = "both",
+                             segment.size = 0.25,
+                             segment.alpha=0.1,
+                             max.overlaps = 100) +
+    #pontos amostrais
+    geom_point(aes(x=NMDS1, 
+                   y=NMDS2, 
+                   fill = `Metadata 9`,
+                   col = `Metadata 9`,
+                   # label = `Unique ID`,
+                   # alpha = 0.75,
+                   
+                   group = `Metadata 9`,
+                   shape = `Metadata 7`), 
+               stroke = 0.5,
+               alpha=0.75,
+               # col="#656565",
+               size = 5)+ 
+    #nomes dos pontos amostrais
+    geom_text(aes(label = `Sample name`),
+              # geom_text(aes(label = interaction(`Sample name`, `Metadata 7`)),
+              hjust=0.5, 
+              vjust=2.75, 
+              size=2) +
+    #centroides ----
+  geom_point(data = cent,
+             aes(x=NMDS1, 
+                 y=NMDS2, 
+                 # colour = Metadata.2,
+                 fill = `Metadata 9`
+             ),
+             size= 8,
+             colour="#222222",
+             alpha=0.75,
+             shape = 23
+  )+
+    coord_fixed()+
+    # scale_colour_manual(values = c("#fcca03","#6b0000","#02cc37"))+
+    # scale_fill_manual(values = c("#d65d00", "#fa9141","#92fa37", "#5000b8", "#8129f2" )) +
+    # scale_colour_manual(values = c("#d65d00", "#fa9141","#92fa37", "#5000b8", "#8129f2" )) +
+    scale_fill_manual(values = cores) +
+    scale_colour_manual(values = cores) +
+    # scale_fill_manual(values = viridis::turbo(n = 5)) +
+    # scale_colour_manual(values = viridis::turbo(n = 5)) +
+    # scale_shape_manual(values = c(21,24,25)) +
+    scale_shape_manual(values = c(21,22,23,24,25,13)) +
+    # Elipses ###################################################################
+  # elipse calculada usando função do vegan, bem menor
+  # geom_path(data=df_ell, aes(x=NMDS1, y=NMDS2,colour=Metadata.2), size=0.5, linetype=2) +
+  # ADD ggforce's ellipses
+  # ggforce::geom_mark_ellipse(inherit.aes = FALSE,
+  #                            data = df_ell,
+  #                            aes(x = NMDS1,y = NMDS2,
+  #                                group=Metadata.2,
+  #                                label=Metadata.2,
+  #                                col =Metadata.2,
+  #                                fill =Metadata.2
+  #                            ),
+  #                            alpha=0.025,
+  #                            n = 200, linetype=2,
+  #                            expand = 0,
+  #                            label.fontsize = 18,
+  #                            label.colour = "#919191",
+  #                            con.cap = 0.1
+  # ) +
+  # ggplot2::geom_polygon(data = df_ell,inherit.aes = F,
+  #                       aes(x=NMDS1,
+  #                           y=NMDS2,
+  #                           group  = Metadata.2,
+  #                                              col =Metadata.2),linetype=2)+
+  # scale_fill_manual(values = c("#fcca03","#6b0000","#02cc37"))+
+  # )+
+  theme_light()+ 
+    # labs(colour = "Intervenção", 
+    #      shape = "Local") + 
+    theme(legend.position = "right", 
+          legend.text = element_text(size = 12), 
+          legend.title = element_text(size = 12), 
+          axis.text = element_text(size = 10)) +
+    # notação do valor do stress do NMDS
+    # annotate(geom = "text",
+    #          x=c(-0.25),
+    #          y=c(-0.25),
+    #          label=c(paste0("Stress: ",format(round(all_ps_vegan_ord_meta$stress,4)))),
+    #          size=8,col="#919191") +
+    labs(title  = paste0(prjct_rad, " - NMDS das identificações por BLASTn"),
+         subtitle = paste0("\nConsiderando ",
+                           # "%ID >= 90 e %Abd. >= 0.005,", 
+                           # " todas identificações de Vertebrados",
+                           # " identificações de Aves e Mamíferos",
+                           " identificações de Aves",
+                           "\n","Stress: ",format(round(all_ps_vegan_ord_meta$stress,4)))) +
+    theme(plot.title = element_text(size = 30)) +
+    theme(plot.subtitle = element_text(size = 26)) +
+    theme(legend.title = element_text(size = 16)) +
+    theme(legend.text =  element_text(size = 12)) +
+    theme(axis.title = element_text(size = 24)) +
+    theme(legend.position = "bottom") +
+    labs(caption = paste0("Amostras removidas:\n",
+                          paste0(amostras_removidas,collapse = ", "))) +
+    guides(fill=guide_legend(title="Ano de recuperação"),
+           col=guide_legend(title="Ano de recuperação"),
+           shape=guide_legend(title="Proprietário"))
+  
+  manual_NMDS_plot
+  
+  
+  
+  #get plot area dims ---- 
+  plot_dims <- DeLuciatoR::get_dims(manual_NMDS_plot,
+                                    maxheight = 50,
+                                    maxwidth = 50,
+                                    units = "cm")
+  
+  
+  #save plot ----
+  ggsave(file = paste0(figs_path,"/relat/","3grupos-",
+                       # "NMDS_manual-abd_limpa-todos_vertebrados-",
+                       # "NMDS_manual-abd_limpa-Aves_e_Mamiferos-",
+                       "NMDS_manual-abd_limpa-Aves-",
+                       paste0("sem_",paste0(amostras_removidas, collapse ="_"),collapse = ""),
+                       "-", "id90",
+                       prjct_rad, "-", Sys.Date(), ".pdf", collapse = ""),
+         plot = manual_NMDS_plot,
+         device = "pdf",
+         units = "cm",
+         width = (plot_dims$width * 1 + 6),
+         height = (plot_dims$height * 1 + 10),
+         dpi = 300, limitsize = FALSE)
+  
+}
+
+
+# ggplot_build(manual_NMDS_plot)
+
+
+
+
+#quais amostras est'ao atrapalhando?
+
+View(site.scrs)
+
+remotes::install_github("infotroph/DeLuciatoR")
+1
+
+
+library("DeLuciatoR")
+
+```
+
+
+# Análises do relatório
+
+
+# FIGURA 1
+
+```{r eval=FALSE, echo=TRUE}
+
+
+# FIGURA 1 - Número de taxa detectado por Classe em cada conjunto amostral ----
+
+tx_per_class_tbl <- FINAL_TBL %>% 
+  group_by(`Phylum (BLASTn)`, `Class (BLASTn)`,`Metadata 9`) %>% 
+  summarise("ASVs" =  length(unique(`ASV (Sequence)`)),
+            "OTUs" = length(unique(OTU)),
+            "IDs" =  length(unique(`Curated ID`)),
+            "Área" = unique(`Metadata 9`),
+            "Espécies detectadas" = paste0(sort(unique(`Curated ID`)),collapse = ", ")) %>% 
+  ungroup()  
+
+
+tx_per_class_plot <- tx_per_class_tbl %>% 
+  select(-c("Espécies detectadas")) %>% 
+  pivot_longer(cols = c(`ASVs`,`OTUs`,`IDs`),
+               names_to = "Tipo",
+               values_to = "Counts") %>% 
+  filter(Tipo %in% c("IDs")) %>%
+  # filter(Tipo %in% c("OTUs")) %>% 
+  arrange(`Área`) %>% 
+  ggplot(aes(x = Counts,
+             label = sum(Counts),
+             fill= `Área`,
+             # group = interaction(`Distância`,Tempo, sep = " - ")))+
+             group = `Área`))+
+  # geom_bar(aes(y = interaction(`Distância`,Tempo, sep = " - ")),
+  geom_bar(aes(y = `Área`),
+           stat = "identity",
+           position = "stack",
+           col="#8c8c8c",
+           linewidth=0.1,
+           alpha = 1,
+           width=.5) +
+  # geom_text(aes(y = interaction(`Distância`,Tempo,sep = " - "),
+  geom_text(aes(y = `Área`,
+                label=Counts,
+                hjust=-1),
+            size=6)+
+  
+  scale_fill_manual(values = cores,
+                    breaks = names(cores)) +
+  facet_grid(rows = vars(`Class (BLASTn)`),
+             # cols = vars(`Distância`),
+             scales = "free_x",
+             space = "free_x",drop = TRUE
+  ) +
+  # ylab(label = "Disância de coleta & Tempo de conservação") +
+  ylab(label = "Conjunto amostrais") +
+  xlab(label = expression(paste("Número de ",italic("taxa")," detectado por Classe"))) +
+  theme_bw(base_size = 12) +
+  theme(
+    axis.title.x = element_text(size = 18),
+    axis.title.y = element_text(size = 18, vjust = 2),
+    strip.text.x = element_text(size = 16, angle = 0),
+    strip.text.y = element_text(size = 16, angle = 0),
+    axis.text.x = element_text(size=16,angle=0),
+    axis.text.y = element_text(size=16)
+  ) + 
+  theme(legend.position='bottom') +
+  # scale_x_continuous(breaks = c(0,5,10,25,50,75,100,125,150,200,250,300,350,400,450,500,600,700),
+  scale_x_continuous(breaks = seq(0,50,5),
+                     # trans = "log2",expand = c(0.05,0.05))
+                     expand = c(0.05,0.05))
+
+tx_per_class_plot
+
+ggsave(file = paste0(figs_path,"/relat/",
+                     # "3grupos-",
+                     "5grupos-",
+                     prjct_rad,"-",Sys.Date(),"-num_taxa_per_class-id80.pdf",collapse = ""),
+       plot = tx_per_class_plot,
+       device = "pdf",
+       width = 40,
+       height = 22,
+       units = "cm",
+       dpi = 300)
+
+
+
+#salvar tabela de espécies por amsotra e classe
+
+tx_per_class_tbl %>% writexl::write_xlsx(path = paste0(results_path,
+                                                       "/5grupos-",
+                                                       # "/3grupos-",
+                                                       "Tabela_de_IDs_por_amostra-",
+                                                       prjct_rad,"-",Sys.Date(),"-num_taxa_per_class-id80.xlsx",
+                                                       collapse = ""),
+                                         col_names = T, 
+                                         format_headers = T)
+
+
+
+
+cores
+
+
+
+
+```
+
+
+# FIGURA 2
+
+```{r eval=FALSE, echo=TRUE}
+# FIGURA 2 - distribuição de número de IDs por Classe e Unidade amostral
+
+
+
+# Riqueza de taxa por status de conservação e estado----
+
+
+
+library(ggsignif)
+
+area_tax_rich_tbl <-
+  FINAL_TBL %>%
+  group_by(`Sample name`,
+           `Metadata 9`, 
+           `Class (BLASTn)`
+           # `Order (BLASTn)`
+  ) %>% 
+  summarise("ASVs" =  length(unique(`ASV (Sequence)`)),
+            "OTUs" = length(unique(OTU)),
+            "IDs" =  length(unique(`Curated ID`)),
+            "Status" = unique(`Metadata 9`)) %>%
+  ungroup() %>% 
+  pivot_longer(cols = c(`ASVs`,`OTUs`,`IDs`),
+               names_to = "Tipo",
+               values_to = "Counts") 
+
+
+area_tax_rich_tbl <- area_tax_rich_tbl %>% 
+  bind_rows(area_tax_rich_tbl %>%
+              mutate("Class (BLASTn)" = "Todos"))
+
+
+area_tax_rich_tbl$`Metadata 9` %>% levels()
+
+area_tax_rich_plot <-
+  area_tax_rich_tbl %>% 
+  filter(Tipo %in% c("IDs")) %>% 
+  filter(`Class (BLASTn)` %in% c("Insecta","Actinopteri","Amphibia","Aves","Mammalia","Crocodylia/\nTestudines/\nLepidosauria","Todos")) %>% 
+  ggplot(aes(x = Status,
+             y = Counts,
+             fill=Status,
+             # alpha = 0.5,
+             # group = interaction(Estado,Status,sep = " - ")
+             group = Status
+  )) +
+  geom_signif(comparisons = list(
+    c("PESMar","Antigo"),
+    c("PESMar","Recente"),
+    c("Antigo","Recente")
+    # ,
+    # c("PESMar","Antigo Distante"),
+    # c("PESMar","Antigo Distante"),
+    # c("PESMar","Recente Perto"),
+    # c("PESMar","Recente Distante")
+  ),
+  map_signif_level=TRUE,
+  col="#bfbfbf",
+  y_position = c(13,13.75,14.5,15.25),
+  test = "wilcox.test",
+  ) +
+  geom_boxplot(position = position_dodge(width = 0.8,preserve = "single"),
+               outlier.alpha = NA,
+               outlier.fill = NA,
+               outlier.shape = NA) +
+  geom_jitter(aes(
+    col=Status),
+    width = 0.3,
+    size =0.5) +
+  scale_fill_manual(values = cores,
+                    breaks = names(cores)) +
+  scale_colour_manual(values = cores,
+                      breaks = names(cores)) +
+  facet_grid(
+    # rows = vars(`Env. Mat`),
+    # cols = vars(`Class (BLASTn)`,`Order (BLASTn)`),
+    cols = vars(`Class (BLASTn)`)
+    # scales = "free",
+    # space = "free"
+  ) +
+  
+  
+  theme_bw() +
+  theme(strip.text.y = element_text(size = 16,angle = 0),
+        strip.text.x = element_text(size = 16),
+        axis.text.x = element_text(size=10,angle = 45, hjust = 1),
+        axis.text.y = element_text(size=10),
+        axis.title.x = element_text(size=16),
+        axis.title.y = element_text(size=16),
+        legend.text = element_text(size=16),
+        legend.title = element_text(size=20)) +
+  xlab(label = "Unidade amostral") +
+  ylab(label = expression(paste("Número de espécies por ",italic("taxa"), " detectadas em cada Localidade Amostral"))) + 
+  theme(legend.position='bottom') +
+  scale_y_continuous(breaks = seq(0,130,5))
+# library(ggpubr)
+
+area_tax_rich_plot
+dev.off()
+
+# ggsave(file = paste0(figs_path,"/relat/05mai23/",prjct_rad,"-",Sys.Date(),"-rich_taxa_per_SampUnit_area_class-90.pdf",collapse = ""),
+ggsave(file = paste0(figs_path,"/relat/",prjct_rad,"-",
+                     "3grupos-",
+                     Sys.Date(),"-rich_taxa_per_SampUnit_area_class-id80.pdf",collapse = ""),
+       plot = area_tax_rich_plot,
+       device = "pdf",
+       width = 30,units = "cm",
+       height = 22,
+       dpi = 300)
+
+
+
+```
+
+
+# FIGURA 3
+
+```{r eval=FALSE, echo=TRUE}
+
+
+
+```
+
+# FIGURA X
+
+```{r eval=FALSE, echo=TRUE}
+
+
+
+```
+
+# FIGURA X
+
+```{r eval=FALSE, echo=TRUE}
+
+
+
+```
+
+# FIGURA X
+
+```{r eval=FALSE, echo=TRUE}
+
+
+
+```
+
+
+# figura de OTus e ASVs por amostras
+
+```{r eval=FALSE, echo=TRUE}
+
+
+# ----
+FINAL_TBL %>% 
+  filter(!str_detect(string = `Curated ID`, pattern = "nvironmental")) %>% 
+  filter(`BLASTn pseudo-score` >= 90) %>%
+  pull(`Phylum (BLASTn)`) %>% 
+  table()
+
+
+
+FINAL_TBL %>% 
+  filter(!str_detect(string = `Curated ID`, pattern = "nvironmental")) %>% 
+  filter(`BLASTn pseudo-score` >= 90) %>%
+  pull(`Class (BLASTn)`) %>% 
+  table()
+
+
+# Gráfico de identidades----
+options(scipen = 10000000)
+
+# All markers ----
+marker_IDs <- FINAL_TBL %>% 
+  filter(`Kingdom (BLASTn)` %in% c("Metazoa")) %>%
+  filter(!is.na(`Clean relative abd. on sample`)) %>%
+  filter(`Phylum (BLASTn)` %in% c("Chordata")) %>%
+  group_by(`Class (BLASTn)`, `Curated ID`) %>%
+  ggplot(aes(x =`1_indentity`,
+             fill = cut(`1_indentity`,
+                        breaks = 40)
+  )
+  )+
+  geom_histogram(bins = 40,
+                 position = "stack") +
+  facet_grid(
+    # cols = vars(Primer),
+    rows = vars(`Class (BLASTn)`))+
+  scale_y_log10()+
+  scale_fill_manual(values =  rev(viridis::turbo(n=40)))+
+  xlab(label = "Percentual de identidade da identificação por BLASTn")+
+  ylab(label = "Número de ASVs") +
+  theme(strip.text.y = element_text(size = 10,angle = 0),
+        strip.text.x = element_text(size = 10)) +
+  guides(fill="none")
+
+marker_IDs
+
+ggsave(file = paste0(figs_path,prjct_rad,"-",Sys.Date(),"-IDs_percent_by_taxa.pdf",collapse = ""),
+       plot = marker_IDs,
+       device = "pdf",
+       width = 20,units = "cm",
+       height = 30,
+       dpi = 300)
+
+
+
+
+# Gráfico de identidades----
+
+
+FINAL_TBL %>% 
+  ggplot(aes(y = `1_indentity`,
+             x = ,`1_qcovhsp`,
+             shape = `Metadata 10`,
+             col = `Phylum (BLASTn)`,
+             alpha=0.05),
+         size =1)+
+  geom_jitter(width = 0.5 ,
+              height = 0.5 )+
+  scale_color_manual(values = rev(viridis::viridis(n = length(unique(FINAL_TBL$`Phylum (BLASTn)`)))))
+
+
+vegan::diversity(x = all_IDs_NMDS_df[,15:ncol(all_IDs_NMDS_df)])
+vegan::diversity(x = all_IDs_NMDS_df[,15:ncol(all_IDs_NMDS_df)],
+                 groups = all_IDs_NMDS_df$Status )
+
+FINAL_TBL %>% 
+  filter(`Class (BLASTn)` %in% c("Aves")) %>% 
+  pull(`Curated ID`) %>% 
+  table() %>% length()
+
+
+
+FINAL_TBL %>% 
+  filter(`Class (BLASTn)` %in% c("Insecta")) %>% 
+  # filter(`ASV rel. abd. in Sampling Unit by marker` >= 0.005) %>%
+  # filter(`1_indentity` >= 85) %>% 
+  pull(`Curated ID`) %>% 
+  table() %>% length()
+
+
+
+FINAL_TBL %>% 
+  filter(`Class (BLASTn)` %in% c("Hexanauplia")) %>% 
+  pull(`Curated ID`) %>% 
+  table() 
+
+
+
+FINAL_TBL$`Metadata 9` %>% unique()
+
+
+
+
+
+FINAL_TBL %>% 
+  select("Unique ID","Sampling Unit total abundance") %>% 
+  unique() %>% 
+  pull(`Sampling Unit total abundance`) %>% 
+  sum()
+
+
+
+
+
+FINAL_TBL %>% 
+  select("Unique ID","Sampling Unit total abundance") %>% 
+  unique() %>% 
+  pull(`Sampling Unit total abundance`) %>% 
+  sum()
+
+
+
+
+
+
+
+# heatmap de identificações ----
+
+FINAL_TBL %>% colnames()
+FINAL_TBL$`Identification Max. taxonomy` %>% unique()
+
+
+{
+  IDs_smpls_heat <- 
+    FINAL_TBL %>%
+    filter(`Identification Max. taxonomy` %in% c( "Genus", "Species")) %>% 
+    # mutate("Unique_File_name" = factor(Unique_File_name, levels = sample_levels)) %>%
+    filter(Type %in% c("Sample")) %>%
+    filter(`Kingdom (BLASTn)` %in% c("Metazoa")) %>%
+    filter(`Phylum (BLASTn)` %in% c("Chordata")) %>%
+    # filter(`1_indentity` >= 99) %>%
+    # filter(`Genus (BLASTn)` %in% c("Panthera","Brachyteles","Pteronura",
+    #                                "Sylvilagus","Puma","Tapirus",
+    #                                "Priodontes","Alouatta","Tayassu","Phyllomys"
+    # ))%>%
+    # filter(`Class (BLASTn)` %in% c("Mammalia")) %>%
+    filter(`Class (BLASTn)` %in% c("Aves")) %>%
+    group_by(`Curated ID`,`Sampling Unit`) %>%
+    # group_by(`Genus (BLASTn)`,Unique_File_name) %>%
+    mutate("Relative abundance on sample sum" = round(mean(`Relative abundance on sample`)*100,digits = 3),
+           "Num ASVs per ID" = length(unique(`DNA Sequence`))
+           # ,
+           # "Min. BLASTn pseudo-score" = round(min(`Blast pseudo-score`),digits = 1)
+    ) %>%
+    # filter(`Relative abundance on sample sum` >= 0.1) %>%
+    # filter(Estado %in% "São Paulo") %>%
+    # filter(Estado %in% "Minas Gerais") %>%
+    filter(Estado %in% "Rio de Janeiro") %>%
+    # unite(col = ID_score,sep = "   ", `Curated ID`,
+    #       `Min. BLASTn pseudo-score`) %>% 
+    ggplot(aes( x = `Sampling Unit`,
+                # ggplot(aes(x=`Metadata.1`,
+                y=`Curated ID`,
+                # y=`Genus (BLASTn)`,
+                # y=`ID_score`,
+                fill=`Relative abundance on sample sum`,
+                # col=`Possible contamination`,
+                # group=`ASV (Sequence)`,
+                group=`Curated ID`
+                # group=`Genus (BLASTn)`
+                # linetype = `Possible contamination`,
+                # label = `Num ASVs per ID`
+    )) +
+    geom_tile(size=0.25,
+              height = 0.75,
+              width = 0.75) +
+    geom_text(aes(label = round(`Relative abundance on sample sum`,digits = 1)), size = 1.5
+              
+              # ,fill="white", label.size = 0.01, col = "Black",show.legend = TRUE
+    ) +
+    # stat_contour(aes(z=`Possible contamination`),
+    #              color = c("#ff000d",NA)) +
+    # scale_fill_gradientn(name = "Relative abd.\n on sample (%)",
+    scale_fill_gradientn(name = "Abundância relativa\nna amostra (%)",
+                         # colours = c("white","dark red","red", "yellow","green","dark green","blue"),
+                         colours = c( "yellow","green","dark green","blue"),
+                         # colours = viridis::viridis(n = 10,direction = -1),
+                         values = c(0,1),
+                         # breaks = c(0.001,0.01, 0.1,1,5,10,25,50,100),
+                         breaks = c(0.01, 0.1,1,5,10,25,50,100),
+                         na.value ="white",
+                         trans="log10")+
+    # scale_colour_manual(values = c("#d91133",NA)) +
+    scale_linetype_manual(values=c("solid",NA)) +
+    # guides(color = guide_legend(override.aes = list(fill = "white", 
+    #                                                 size = 10))) +
+    theme_bw(base_line_size = 0.025,base_size = 2) +
+    # theme(axis.text.x = element_text(angle = 0,hjust = 1)) +
+    xlab("Pontos de coleta") +
+    ylab("Espécies") +
+    scale_y_discrete(limits=rev) +
+    # ggtitle(label = paste0("Ecomol - ",prjct_rad),
+    # ggtitle(label = paste0("Ecomol - ",prjct_rad),
+    ggtitle(label = paste0("ECOMOL - ",prjct_rad, " - ",Sys.Date()),
+            # subtitle = "Espécies identificados nas amostras\n             (com BLAST pseudo-score >= 98% e ASVs de tamanho entre 221 e 256 - apenas cordados)") +                                                                # Change font size
+            # subtitle = "Número de ASVs por espécie: Identificações por BLASTn com >= 98% de similaridade") +      
+            subtitle = "Espécies e gêneros identificados por ponto amostral") +
+    
+    # facet_grid(rows = vars(`Class (BLASTn)`,`Order (BLASTn)`),
+    # facet_grid(rows = vars(`Class (BLASTn)`,`Order (BLASTn)`,`Family (BLASTn)`),
+    facet_grid(rows = vars(`Order (BLASTn)`,`Family (BLASTn)`),
+               # cols = vars(Primer),
+               # cols = vars(Cliente,Project),
+               # cols = vars(Project,`Metadata.3`),
+               cols = vars(Estado,Status),
+               # labeller = labeller(`Metadata.3` = supp.labs),
+               # facet_grid(rows = vars(`Possible contamination`,`Read origin`),
+               # cols = vars(Origin),
+               scale = 'free',space = 'free') +# Change font size
+    # subtitle = "Espécies identificados nas amostras\n             (com BLAST pseudo-score >= 98% & RRA >= 0.05) - apenas peixes.") +                                                                # Change font size
+    theme(strip.text.y = element_text(size = 14,angle = 0),
+          strip.text.x = element_text(size = 12),
+          plot.title = element_text(size=12),
+          plot.subtitle = element_text(size=8),
+          axis.title.x =element_text(size=14), 
+          axis.title.y =element_text(size=14), 
+          axis.text.x = element_text(size=12,angle = 45, hjust = 1),
+          axis.text.y = element_text(size=12),
+          legend.text= element_text(size=8),
+          legend.title = element_text(size=10),
+          legend.key.size = unit(2, 'cm'),
+          legend.position="bottom",
+          panel.border = element_rect(colour = "#000000", fill = NA,linewidth = 0.01),
+          panel.grid = element_line(colour = "#ffffff",size = 0.01)
+    ) 
+  # facet_wrap2(facets = `Phylum (BLASTn)`~ Metadata 1) 
+  
+  IDs_smpls_heat
+  # pg <- ggplotGrob(IDs_smpls_heat)
+  # 
+  # 
+  # 
+  # for(i in which(grepl("strip-r", pg$layout$name))){
+  #   pg$grobs[[i]]$layout$clip <- "off"
+  # }
+  # grid::grid.draw(pg)
+  
+  
+  
+  # ggsave(file = paste0(figs_path,"/",prjct_rad,"-Todos_Mamiferos-RJ.pdf",collapse = ""),
+  ggsave(file = paste0(figs_path,"/",prjct_rad,"-Todas_Aves-RJ.pdf",collapse = ""),
+         plot = IDs_smpls_heat,
+         device = "pdf",
+         width = 60,
+         height = 80,
+         units = "cm",
+         limitsize = FALSE,
+         dpi = 300)
+}
+
+
+
+
+
+
+
+#----
+```
+
+
+
+
+
+
+
+
+
+#Beta Disper
+
+
+```{r eval=FALSE, echo=TRUE}
+
+#Boxplot distance to centroids ----
+
+
+dist <- vegdist(all_IDs_NMDS_df[,16:ncol(all_IDs_NMDS_df)],method = "jaccard")
+
+all_IDs_betadis <- betadisper(dist,all_IDs_NMDS_df$`Metadata 9`)
+
+boxplot(all_IDs_betadis)
+
+all_IDs_betadis$vectors
+all_IDs_betadis$distances
+
+btdspr_tbl <- tibble("distances" = all_IDs_betadis$distances,
+                     "group" = all_IDs_betadis$group)
+
+
+library(ggpubr)
+
+btdspr_plot <- btdspr_tbl %>% mutate(group = factor(group,
+                                                    levels = c("PESMar",
+                                                               "Antigo",
+                                                               "Recente"))) %>%
+  # levels = c("PESMar",
+  #            "Antigo Perto",
+  #            "Antigo Distante",
+  #            "Recente Perto",
+  #            "Recente Distante"))) %>%
+  ggplot(aes(x=group, 
+             fill=group, 
+             col=group, 
+             y=distances)) + 
+  geom_boxplot(alpha=0.75) +
+  geom_jitter(height = 0,
+              width = 0.3) +
+  
+  geom_signif(comparisons = list(
+    c("PESMar","Antigo"),
+    c("PESMar","Recente"),
+    c("Antigo","Recente")
+    
+    # c("PESMar","Antigo Perto"),
+    # c("PESMar","Antigo Distante"),
+    # c("PESMar","Recente Perto"),
+    # c("PESMar","Recente Distante")
+  ),
+  map_signif_level=TRUE,
+  col="#bfbfbf",
+  y_position = c(0.725,0.75,0.775,0.8,0.825),
+  # test = "wilcox.test",
+  ) +
+  
+  theme_bw() +
+  scale_fill_manual(values = cores,
+                    breaks = names(cores))+
+  scale_colour_manual(values = cores,
+                      breaks = names(cores)) +
+  ylab(label = "Distância dos centroides") +
+  xlab(label = "Status de conservação") +
+  theme(legend.position = "bottom") +
+  guides(color=guide_legend("Status de conservação"),
+         fill=guide_legend("Status de conservação"))
+
+
+
+
+btdspr_plot
+
+ggsave(file = paste0(figs_path,"/relat/05mai23/",
+                     "3grupos-",
+                     "dist_centroids-all_markers-Solo-all_CleanAbd-90-",estado,"-",EnvMat,"-",prjct_rad,"-",Sys.Date(),".pdf",collapse = ""),
+       plot = btdspr_plot,
+       device = "pdf",
+       width = 20,units = "cm",
+       height = 14,
+       dpi = 300)
+
+
+
+
+
+
+
+
+
+#Betapart
+
+
+#aqnalises brejao
+library(betapart)
+
+
+unique(all_IDs_NMDS_df$`Metadata 9`)
+
+# all_IDs_NMDS_df_presence <- all_IDs_NMDS_df[,15:ncol(all_IDs_NMDS_df)]
+all_IDs_NMDS_df_presence <- 1*(all_IDs_NMDS_df[,16:ncol(all_IDs_NMDS_df)] > 0)
+
+
+View(all_IDs_NMDS_df_presence)
+
+dim()
+
+
+
+
+# 3 grupos ----
+all_NMDS_pres_PESMAr <- all_IDs_NMDS_df_presence[all_IDs_NMDS_df$`Metadata 9` == "PESMar",] 
+all_NMDS_pres_12 <- all_IDs_NMDS_df_presence[all_IDs_NMDS_df$`Metadata 9` == "Antigo",] 
+all_NMDS_pres_22 <- all_IDs_NMDS_df_presence[all_IDs_NMDS_df$`Metadata 9` == "Recente",] 
+
+
+
+
+beta.meta_PESMAr <- beta.sample(all_NMDS_pres_PESMAr, index.family="sor",sites=10,samples=100)
+beta.meta_12 <- beta.sample(all_NMDS_pres_12, index.family="sor",sites=10,samples=100)
+beta.meta_22 <- beta.sample(all_NMDS_pres_22, index.family="sor",sites=10,samples=100)
+
+
+
+boxplot((beta.meta_PESMAr$sampled.values$beta.SIM ), 
+        (beta.meta_12$sampled.values$beta.SIM ), 
+        (beta.meta_22$sampled.values$beta.SIM ),
+        
+        (beta.meta_PESMAr$sampled.values$beta.SOR ), 
+        (beta.meta_12$sampled.values$beta.SOR ), 
+        (beta.meta_22$sampled.values$beta.SOR ),
+        
+        (beta.meta_PESMAr$sampled.values$beta.SNE ), 
+        (beta.meta_12$sampled.values$beta.SNE ), 
+        (beta.meta_22$sampled.values$beta.SNE ), 
+        ylim=c(0,1), names =c("PESMar SIM",
+                              "Antigo SIM",
+                              "Recente SIM",
+                              "PESMar SOR",
+                              "Antigo SOR",
+                              "Recente SOR",
+                              "PESMar SNE",
+                              "Antigo SNE",
+                              "Recente SNE"))
+
+
+
+
+
+tbl_PESMAr <- tibble("SIM" = beta.meta_PESMAr$sampled.values$beta.SIM,
+                     "SOR" = beta.meta_PESMAr$sampled.values$beta.SOR,
+                     "SNE" = beta.meta_PESMAr$sampled.values$beta.SNE,
+                     "Status" = "PESMar")
+
+
+
+
+tbl_12 <- tibble("SIM" = beta.meta_12$sampled.values$beta.SIM,
+                 "SOR" = beta.meta_12$sampled.values$beta.SOR,
+                 "SNE" = beta.meta_12$sampled.values$beta.SNE,
+                 "Status" = "Antigo")
+
+
+tbl_22 <- tibble("SIM" = beta.meta_22$sampled.values$beta.SIM,
+                 "SOR" = beta.meta_22$sampled.values$beta.SOR,
+                 "SNE" = beta.meta_22$sampled.values$beta.SNE,
+                 "Status" = "Recente")
+
+
+
+beta_res_all <- bind_rows(tbl_PESMAr, 
+                          tbl_12, 
+                          tbl_22)
+
+
+# 5 grupos ----
+all_NMDS_pres_PESMAr <- all_IDs_NMDS_df_presence[all_IDs_NMDS_df$`Metadata 9` == "PESMar",] 
+all_NMDS_pres_12per <- all_IDs_NMDS_df_presence[all_IDs_NMDS_df$`Metadata 9` == "Antigo Perto",] 
+all_NMDS_pres_12lon <- all_IDs_NMDS_df_presence[all_IDs_NMDS_df$`Metadata 9` == "Antigo Distante",] 
+all_NMDS_pres_22per <- all_IDs_NMDS_df_presence[all_IDs_NMDS_df$`Metadata 9` == "Recente Perto",] 
+all_NMDS_pres_22lon <- all_IDs_NMDS_df_presence[all_IDs_NMDS_df$`Metadata 9` == "Recente Distante",] 
+
+
+
+
+beta.meta_PESMAr <- beta.sample(all_NMDS_pres_PESMAr, index.family="sor",sites=10,samples=100)
+beta.meta_12per <- beta.sample(all_NMDS_pres_12per, index.family="sor",sites=10,samples=100)
+beta.meta_12lon <- beta.sample(all_NMDS_pres_12lon, index.family="sor",sites=10,samples=100)
+beta.meta_22per <- beta.sample(all_NMDS_pres_22per, index.family="sor",sites=10,samples=100)
+beta.meta_22lon <- beta.sample(all_NMDS_pres_22lon, index.family="sor",sites=10,samples=100)
+
+
+
+boxplot((beta.meta_PESMAr$sampled.values$beta.SIM ), 
+        (beta.meta_12per$sampled.values$beta.SIM), 
+        (beta.meta_12lon$sampled.values$beta.SIM ), 
+        (beta.meta_22per$sampled.values$beta.SIM ), 
+        (beta.meta_22lon$sampled.values$beta.SIM ),
+        
+        (beta.meta_PESMAr$sampled.values$beta.SOR ), 
+        (beta.meta_12per$sampled.values$beta.SOR),
+        (beta.meta_12lon$sampled.values$beta.SOR ), 
+        (beta.meta_22per$sampled.values$beta.SOR ), 
+        (beta.meta_22lon$sampled.values$beta.SOR ),
+        
+        (beta.meta_PESMAr$sampled.values$beta.SNE ), 
+        (beta.meta_12per$sampled.values$beta.SNE), 
+        (beta.meta_12lon$sampled.values$beta.SNE ), 
+        (beta.meta_22per$sampled.values$beta.SNE ), 
+        (beta.meta_22lon$sampled.values$beta.SNE ), 
+        ylim=c(0,1), names =c("PESMar SIM",
+                              "Antigo Perto SIM",
+                              "Antigo Distante SIM",
+                              "Recente Perto SIM",
+                              "Recente Distante SIM",
+                              "PESMar SOR",
+                              "Antigo Perto SOR",
+                              "Antigo Distante SOR",
+                              "Recente Perto SOR",
+                              "Recente Distante SOR",
+                              "PESMar SNE",
+                              "Antigo Perto SNE",
+                              "Antigo Distante SNE",
+                              "Recente Perto SNE",
+                              "Recente Distante SNE"))
+
+
+
+
+
+tbl_PESMAr <- tibble("SIM" = beta.meta_PESMAr$sampled.values$beta.SIM,
+                     "SOR" = beta.meta_PESMAr$sampled.values$beta.SOR,
+                     "SNE" = beta.meta_PESMAr$sampled.values$beta.SNE,
+                     "Status" = "PESMar")
+
+
+
+tbl_12per <- tibble("SIM" = beta.meta_12per$sampled.values$beta.SIM,
+                    "SOR" = beta.meta_12per$sampled.values$beta.SOR,
+                    "SNE" = beta.meta_12per$sampled.values$beta.SNE,
+                    "Status" = "Antigo Perto")
+
+
+
+tbl_12lon <- tibble("SIM" = beta.meta_12lon$sampled.values$beta.SIM,
+                    "SOR" = beta.meta_12lon$sampled.values$beta.SOR,
+                    "SNE" = beta.meta_12lon$sampled.values$beta.SNE,
+                    "Status" = "Antigo Distante")
+
+
+tbl_22per <- tibble("SIM" = beta.meta_22per$sampled.values$beta.SIM,
+                    "SOR" = beta.meta_22per$sampled.values$beta.SOR,
+                    "SNE" = beta.meta_22per$sampled.values$beta.SNE,
+                    "Status" = "Recente Perto")
+
+
+tbl_22lon <- tibble("SIM" = beta.meta_22lon$sampled.values$beta.SIM,
+                    "SOR" = beta.meta_22lon$sampled.values$beta.SOR,
+                    "SNE" = beta.meta_22lon$sampled.values$beta.SNE,
+                    "Status" = "Recente Distante")
+
+
+
+beta_res_all <- bind_rows(tbl_PESMAr, 
+                          tbl_12per, 
+                          tbl_12lon, 
+                          tbl_22per, 
+                          tbl_22lon)
+
+
+# gráfico ----
+
+beta_res_all$Status %>% unique()
+
+beta_box <- beta_res_all %>% 
+  mutate(Status = factor(Status, levels = c("PESMar","Recente","Antigo"))) %>%
+  # mutate(Status = factor(Status, levels = c("PESMar",
+  #                                           "Antigo Perto", 
+  #                                           "Antigo Distante", 
+  #                                           "Recente Perto", 
+  #                                           "Recente Distante"))) %>%
+  pivot_longer(cols = c("SIM","SOR","SNE"),names_to = "index",values_to = "Values") %>% 
+  mutate(index = factor(index, levels = c("SOR","SIM","SNE"))) %>% 
+  ggplot(aes(y=Values,
+             x=Status))+
+  geom_boxplot(aes(fill=Status),
+               col="#111111")+
+  geom_jitter(aes(col=Status),
+              # col="#111111",
+              alpha=0.5,
+              height = 0,
+              width = 0.4,
+              size=1) +
+  geom_signif(comparisons = list(
+    c("PESMar","Antigo"),
+    c("PESMar","Recente"),
+    c("Antigo","Recente")
+    # ,
+    # c("PESMar","Antigo Perto"),
+    # c("PESMar","Antigo Distante"),
+    # c("PESMar","Recente Perto"),
+    # c("PESMar","Recente Distante")
+  ),
+  map_signif_level=TRUE,
+  col="#bfbfbf",
+  y_position = c(0.3,0.4,0.5,0.6,0.7),
+  # test = "wilcox.test",
+  ) +
+  theme_bw() +
+  scale_colour_manual(values = cores,
+                      breaks = names(cores)) +
+  scale_fill_manual(values = cores,
+                    breaks = names(cores)) +
+  facet_grid(cols = vars(index),
+             scales="free",
+             space = "free")+
+  # labs(title = paste0(estado," - ",EnvMat)) +
+  ylab(label = "Beta diversidade taxonômica par a par") +
+  xlab(label = "Status de conservação") +
+  theme(axis.text.x = element_text(size=12,angle = 45, hjust = 1))
+
+
+
+
+
+beta_box
+
+
+ggsave(file = paste0(figs_path,"/relat/",
+                     "3grupos-",
+                     "beta_part_box-ID80-",prjct_rad,"-",Sys.Date(),".pdf",collapse = ""),
+       plot = beta_box,
+       device = "pdf",
+       width = 30,units = "cm",
+       height = 20,
+       dpi = 300)
+
+
+
+
+```
