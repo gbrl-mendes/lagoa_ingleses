@@ -64,7 +64,8 @@ date: "01/2024"
   fish_ID_tbl %>% colnames()
   
   # FINAL_tbl_IDs <- grouped_by_ID_BLASTid %>%
-  FINAL_tbl_IDs <- fish_ID_tbl %>%
+  # FINAL_tbl_IDs <- fish_ID_tbl %>%
+  FINAL_tbl_IDs_t <- grouped_filt %>%
     filter(expedition %in% c("Novembro 2021")) %>% 
     # filter(Year %in% c("2021")) %>% # definir qual ano entrara na analise
     # filter(RRA >= 0.05) %>% # definicao de qual threshold de abundancia sera usado
@@ -83,306 +84,50 @@ date: "01/2024"
     mutate("Nivel" = as.factor(Nivel)) 
   
   # Verificando a soma das linhas
-  FINAL_tbl_IDs %>% select(starts_with(match = "ID_")) %>% rowSums(na.rm = TRUE)
+  FINAL_tbl_IDs_t %>% select(starts_with(match = "ID_")) %>% rowSums(na.rm = TRUE)
 }
 
 #  Rodando o NMDS
   
     # Preparar dados para entrada no pacote vegan
-    colnames(FINAL_tbl_IDs)
+    colnames(FINAL_tbl_IDs_t)
     
-    FINAL_tbl_IDs$`Sample` %>% unique() %>% sort()
+    FINAL_tbl_IDs_t$`Sample` %>% unique() %>% sort()
     
-    all_IDs_NMDS_tbl <- FINAL_tbl_IDs %>% 
+    all_IDs_NMDS_tbl_t <- FINAL_tbl_IDs_t %>% 
       mutate("Sample number" = 0) %>% 
       relocate("Sample number" )
     
     # Associar números de amostra aos nomes de amostra
-    for (sample in 1:nrow(all_IDs_NMDS_tbl)) {
-      all_IDs_NMDS_tbl$`Sample number`[sample] <- sample
+    for (sample in 1:nrow(all_IDs_NMDS_tbl_t)) {
+      all_IDs_NMDS_tbl_t$`Sample number`[sample] <- sample
     }
     
     # Ordenar dataframe usado no NMDS
-    all_IDs_NMDS_df <- all_IDs_NMDS_tbl %>%
+    all_IDs_NMDS_df_t <- all_IDs_NMDS_tbl_t %>%
       # mutate(Nivel = ifelse(Nivel == "Cheio", "Full", "Empty")) %>%
       as.data.frame()
     
     # Nomear linhas como números de amostra e remover coluna
-    row.names(all_IDs_NMDS_df) <- all_IDs_NMDS_df$`Sample number`
+    row.names(all_IDs_NMDS_df_t) <- all_IDs_NMDS_df_t$`Sample number`
     
     # Corrigir nomes das espécies para evitar problemas na plotagem
-    colnames(all_IDs_NMDS_df)
-    colnames(all_IDs_NMDS_df)[7:ncol(all_IDs_NMDS_df)] <- colnames(all_IDs_NMDS_df)[7:ncol(all_IDs_NMDS_df)] %>%
+    colnames(all_IDs_NMDS_df_t)
+    colnames(all_IDs_NMDS_df_t)[7:ncol(all_IDs_NMDS_df_t)] <- colnames(all_IDs_NMDS_df_t)[7:ncol(all_IDs_NMDS_df_t)] %>%
       str_replace_all(pattern = " ", replacement = "_") %>% 
       str_replace_all(pattern = "\\.", replacement = "") %>% 
       str_replace_all(pattern = "\\(", replacement = "") %>% 
       str_replace_all(pattern = "\\)", replacement = "")
     
-    # Executando o NMDS
-    # Esta e a funcao que faz o NMDS. Para ela fornece-se apenas
-    # as colunas relativas as especies nas amostras
-    all_ps_vegan_ord_meta <- metaMDS(veg = all_IDs_NMDS_df[,7:ncol(all_IDs_NMDS_df)],
-                                     comm = all_IDs_NMDS_df[7:ncol(all_IDs_NMDS_df)],
-                                     # distance = "bray", # Leva em conta o RRA
-                                     distance = "jaccard", # Considera apenas presença/ausenciaa
-                                     halfchange = TRUE 
-    )
-    
-    dim(all_IDs_NMDS_df)
-   
-    # Fazer o fit das variáveis ambientais
-    
-    # meta.envfit <- envfit(all_ps_vegan_ord_meta, all_IDs_NMDS_df[, c("Nivel", "Sample")],
-    meta.envfit <- envfit(all_ps_vegan_ord_meta, all_IDs_NMDS_df[, c("filter", "Sample")],
-                          permutations = 999,
-                          na.rm=TRUE) # this fits environmental vectors
-    
-    # Espécies 
-    
-    # Fazer o fit das espécies para identificar a significância delas na explicação dos agrupamentos. 
-    # Esse é o passo que mais demora quando com muitas amostras e espécies.
-    meta.spp.fit <- envfit(all_ps_vegan_ord_meta, 
-                           all_IDs_NMDS_df[,7:ncol(all_IDs_NMDS_df)], 
-                           permutations = 999) # this fits species vectors
-    
-    # Obter valores de p para as espécies
-    sps_pvals <- tibble("IDs" = names(meta.spp.fit$vectors$pvals),
-                        "p-value" = meta.spp.fit$vectors$pvals)
-    
-    spp.scrs <- as.data.frame(scores(meta.spp.fit, display = "vectors")) %>%
-      mutate("IDs" = rownames(.)) %>%
-      left_join(y = sps_pvals, by = "IDs")
-    
-    {
-      spp.scrs$IDs <- gsub("ID_", "", spp.scrs$IDs)
-      spp.scrs$IDs <- gsub("_", " ", spp.scrs$IDs)
-      } 
-    
-    # Selecionar espécies significativas
-    sig.spp.scrs <- spp.scrs 
-    # %>%
-    #   filter(`p-value` <=
-    #            0.05) # definir p-value aqui!
-    
-    # Pontos amostrais
-    
-    # Definir os valores de NMDS1 e NMDS2, e os metadados de cada amostra/ponto amostral
-    site.scrs <- as.data.frame(scores(all_ps_vegan_ord_meta, display = "sites")) %>%
-      mutate("Sample number" = as.double(row.names(.))) %>%
-      left_join(y = all_IDs_NMDS_df[, c("Sample number",
-                                        "Sample",
-                                        "Nivel",
-                                        "new_name",
-                                        "filter"
-      )], 
-      by = "Sample number")
-    
-    # Determinar centroides
-    scrs <- scores(all_ps_vegan_ord_meta, display = "sites")
-    
-    cent <- aggregate(scrs ~ filter, data = site.scrs, FUN = "mean")
-    
-    # Calcular elipses
-    NMDS <- data.frame("MDS1" = all_ps_vegan_ord_meta$points[, 1],
-                       "MDS2" = all_ps_vegan_ord_meta$points[, 2],
-                       "filter" = as.factor(all_IDs_NMDS_df$filter), check.names = FALSE)
-    
-    NMDS.mean <- aggregate(NMDS[, 1:2], list(group = NMDS$filter), "mean")
-
-  
-# Elipses
-  {
-    plot(all_ps_vegan_ord_meta)
-    
-    # Sobrepor as elipses
-    ord <- ordiellipse(ord = all_ps_vegan_ord_meta, 
-                       groups = all_IDs_NMDS_df$filter,
-                       display = "sites",
-                       kind = "ehull", conf = 0.95, label = T)
-    
-    
-    # Funcao do vegan de calcular elipses
-    veganCovEllipse<-function (cov, center = c(0, 0), scale = 1, npoints = 100) 
-    {
-      theta <- (0:npoints) * 2 * pi/npoints
-      Circle <- cbind(cos(theta), sin(theta))
-      t(center + scale * t(Circle %*% chol(cov)))
-    }
-    
-    df_ell <- data.frame()
-    
-    for(g in levels(NMDS$filter)){
-      print(g)
-      df_ell <- 
-        rbind(df_ell, 
-              cbind(as.data.frame(with(NMDS[NMDS$filter==g,],
-                                       veganCovEllipse(
-                                         ord[[g]]$cov,
-                                         ord[[g]]$center,
-                                         ord[[g]]$scale))),
-                    filter=g))}
-  }
-  
-# Configurar plot NMDS
-  
-# Definir paleta de cores
-  {
-    # paletteer::paletteer_d("colorBlindness::SteppedSequential5Steps")
-    # paletteer::paletteer_d("colorBlindness::SteppedSequential5Steps")[1:3]
-    # paletteer::paletteer_d("colorBlindness::SteppedSequential5Steps")[c(1:3, 2,7,9,10)]
-    # 
-    # my_cols <- c("BAM" = "#0F6B99FF",
-    #              "PARAC" = "#6B990FFF",
-    #              "SAM" = "#99540FFF",
-    #              "SFC" = "#A3CC51FF",
-    #              "SFI" = "#7EC3E5FF",
-    #              "SFM" = "#E5B17EFF") 
-    
-    cores <- c("#f1c232",
-               "#3381b1")
-    
-  }
-
-# Plot
-  {
-  NMDS_MCE_Sterivex <-
-    ggplot(data = site.scrs,
-           aes(x=NMDS1, 
-               y=NMDS2)) +
-    
-    # Elipses 
-    ggforce::geom_mark_ellipse(inherit.aes = FALSE,
-                               data = df_ell,
-                               aes(x = NMDS1,
-                                   y = NMDS2,
-                                   group = filter,
-                                   label = filter,
-                                   col = filter,
-                                   fill = filter
-                               ),
-                               alpha=0.10,
-                               # n = 200,
-                               linetype=2,
-                               expand = 0,
-                               label.fontsize = 14,
-                               con.cap = 0.1
-    ) +
-    # Niveis amostrais
-    geom_point(aes(x=NMDS1,
-                   y=NMDS2,
-                   fill = filter,
-                   # label = `Sampling unit`,  #descomentar se quiser exibir os nomes dos `Sampling sites`s
-                   col=filter,
-                   group = filter,
-                   shape = new_name),
-               stroke = 0.5,
-               alpha = 0.75,
-               size = 3) +
-    
-    # Nomes dos `Sampling sites`s amostrais
-    ggrepel::geom_text_repel(aes(label = new_name),  #descomentar bloco se quiser exibir os nomes dos pontos
-                             # hjust=0.5,
-                             # vjust=2.75,
-                             size=4.5,
-                             direction = "both",
-                             segment.size = 0.25,
-                             segment.alpha=0.1,
-                             # min.segment.length = 1.5,
-                             force = 3,
-                             max.overlaps = 100,
-                             fontface = "bold") +
-
-    # Vetores das IDs
-    geom_segment(data = sig.spp.scrs, aes(x = 0,
-                                          xend = NMDS1,
-                                          y = 0,
-                                          yend = NMDS2),
-                 arrow = arrow(length = unit(0.1, "cm")),
-                 colour = "grey30",
-                 alpha = 0.5,
-                 lwd = 0.3) + #add vector arrows of significant species
-    
-    # Nomes das IDs
-    ggrepel::geom_text_repel(data = sig.spp.scrs,
-                             aes(x=NMDS1, y=NMDS2, label = IDs),
-                             size = 3.5,
-                             alpha = 0.75,
-                             direction = "both",
-                             segment.size = 0.25,
-                             segment.alpha = 0.1,
-                             max.overlaps = 100) +
-    
-    # Centroides
-    geom_point(data = cent,
-               aes(x = NMDS1,
-                   y = NMDS2, # colour = filter,
-                   fill = filter
-               ),
-               size = 8,
-               colour = "#222222",
-               alpha = 0.75,
-               shape  = 13
-    ) + 
-    coord_fixed(expand = c(0.5))+
-    theme_light() +
-    theme(
-      panel.background = element_blank(),
-      # panel.grid.major = element_blank(),
-      panel.grid.major = element_line(color = "grey",
-                                      size = 0.2,
-                                      linetype = 1),
-      # axis.ticks = element_line(color = "grey"),
-      axis.ticks = element_blank(),
-      axis.text = element_text(color = "black"),
-      axis.title = element_text(color = "black", size = rel(1.2)),
-      # legend.background = element_blank(),
-      # legend.key = element_blank(),
-      legend.text = element_text(color = "black"),
-      legend.title = element_text(color = "black", size = rel(1.2)),
-      plot.title = element_text(color = "black", size = rel(1.5)),
-      plot.subtitle = element_text(color = "black", size = rel(1.2))) +
-    theme(plot.title = element_text(size = 14, face = "bold"),
-          axis.text.x = element_text(size = 12),
-          axis.text.y = element_text(size = 12),
-          axis.title.x = element_text(size = 13, face = "bold"),
-          axis.title.y = element_text(size = 13, face = "bold"),
-          legend.text = element_text(size = 12),
-          legend.title = element_text(size = 13),
-          # legend.position = "bottom"
-    ) +
-    labs(x = "NMDS1",
-         y = "NMDS2",
-         title = "Composição da ictiofauna",
-         # subtitle = "Filtro MCE versus Sterivex") +
-         subtitle = "Stress: ",format(round(all_ps_vegan_ord_meta$stress))) +
-    scale_fill_manual(values = cores) +
-    scale_colour_manual(values = cores) 
-  # + scale_fill_manual(values = viridis::turbo(n = 5)) # cores das formas das samples/pontos
-  
-  
-  NMDS_MCE_Sterivex
-
-  
-# Salvar em pdf 
-  ggsave(plot = NMDS_MCE_Sterivex, 
-         filename = paste("/home/gabriel/projetos/lagoa_ingleses/results/figuras/2024/",
-                          "NDMS_MCE_STX_filt", "-", Sys.Date(), ".pdf", sep = ""),
-         device = "pdf",
-         units = "cm",
-         height = 25,
-         width = 25,
-         dpi = 600)
-  }
-                    
 ## PCoA ----
   
   # Dados
-    ## Usando a tabela all_IDs_NMDS_df gerada para o NDMDS
+    ## Usando a tabela all_IDs_NMDS_df_ gerada para o NDMDS
   
   ## Executando o PCoA
   
   #Criando a Matriz de distancia
-  pcOa_dist <- vegan::vegdist(x = all_IDs_NMDS_df[,7:ncol(all_IDs_NMDS_df)],
+  pcOa_dist <- vegan::vegdist(x = all_IDs_NMDS_df_t[,7:ncol(all_IDs_NMDS_df_t)],
                               method = "jaccard",
                               binary = TRUE)
   
@@ -395,7 +140,7 @@ date: "01/2024"
   # Fazer o fit das espécies para identificar a significância delas na explicação dos agrupamentos. 
   # Esse é o passo que mais demora quando com muitas amostras e espécies.
   meta.spp.fit <- envfit(pcOa, 
-                         all_IDs_NMDS_df[,7:ncol(all_IDs_NMDS_df)], 
+                         all_IDs_NMDS_df_t[,7:ncol(all_IDs_NMDS_df_t)], 
                          permutations = 999) # this fits species vectors
   
   # Obter valores de p para as espécies
@@ -426,7 +171,7 @@ date: "01/2024"
   
   site.scrs <- site.scrs %>% 
     mutate("Sample number" = as.double(row.names(.))) %>%
-    left_join(y = all_IDs_NMDS_df[, c("Sample number",
+    left_join(y = all_IDs_NMDS_df_t[, c("Sample number",
                                       "Sample",
                                       "Nivel",
                                       "new_name",
@@ -442,7 +187,7 @@ date: "01/2024"
   # Calcular elipses
   PCoA <- data.frame("PCoA1" = pcOa$points[, 1],
                      "PCoA2" = pcOa$points[, 2],
-                     "filter" = as.factor(all_IDs_NMDS_df$filter), check.names = FALSE)
+                     "filter" = as.factor(all_IDs_NMDS_df_t$filter), check.names = FALSE)
   
   PCoA.mean <- aggregate(PCoA[, 1:2], list(group = PCoA$filter), "mean")
 
@@ -453,7 +198,7 @@ date: "01/2024"
   
   # Sobrepor as elipses
   ord <- ordiellipse(ord = pcOa, 
-                     groups = all_IDs_NMDS_df$filter,
+                     groups = all_IDs_NMDS_df_t$filter,
                      display = "sites",
                      kind = "ehull", conf = 0.95, label = T)
   
@@ -627,7 +372,7 @@ date: "01/2024"
   
   #Assumptions
   
-  Dispersion <- betadisper(pcOa_dist, group = all_IDs_NMDS_df$filter, type = "centroid") # testando a dispercao
+  Dispersion <- betadisper(pcOa_dist, group = all_IDs_NMDS_df_$filter, type = "centroid") # testando a dispercao
   
   plot(Dispersion)
   
@@ -635,7 +380,7 @@ date: "01/2024"
   
   #Test
   
-  perma_test <- adonis2(pcOa_mtx ~ as.factor(all_IDs_NMDS_df$filter), data = pcOa_mtx,
+  perma_test <- adonis2(pcOa_mtx ~ as.factor(all_IDs_NMDS_df_$filter), data = pcOa_mtx,
                    permutations=9999)
   perma_test
   

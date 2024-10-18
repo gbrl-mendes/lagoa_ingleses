@@ -738,8 +738,3 @@ ggplot(aes(x = curated_1_DB,
   labs(x = "Banco de dados",
        y = "Proporção %",
        title = "Origem das identificações")
-
-
-
-
-

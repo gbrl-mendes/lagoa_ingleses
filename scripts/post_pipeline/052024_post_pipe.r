@@ -1364,6 +1364,37 @@ blast_tax <- read.csv("/home/gabriel/projetos/lagoa_ingleses/tabelas/raw/tax_bla
       write.csv(out_grouped_by_ID_BLASTid, "~/projetos/lagoa_ingleses/results/tabelas/out_grouped_2024.csv")
     }
     
+## Alteracoes para o artigo 28 de maio ----
     
+# Alteracoes baseadas nas sugestoes do Daniel, apos ver a tabela suplementar 2 da dissertacao.
+# Como essa tabela é a versao wider da tabela dt_all_resume, tive que fazer as alteracoes abaixo
+# na tabela grouped_by_ID_BLASTid para que eu possa aplicar o filtro sugerido pelo Daniel, que 
+# envolve os numeros de reads apos serem agrupados como esta abaixo:
+    
+grouped_filt <- grouped_by_ID_BLASTid %>%
+  group_by(`Curated ID`,
+           `Final ID (BLASTn)`,
+           `new_name`, 
+           `Nivel`,
+           `filter`,
+           `year`
+           ) %>%
+      reframe("RRA" = RRA,
+              "Sample" =  Sample,
+              "ASVs" = length(unique(`ASV header`)),
+              "OTUs" = length(unique(OTU)),
+              "Nivel" = Nivel,
+              "Ano" = year,
+              "Filtro" = filter,
+              "Reads" = sum(Abundance),
+              "Classe" = `Class (BLASTn)`,
+              "Order" = `Curated Order (BLASTn)`,
+              "Family" = `Family (BLASTn)`,
+              "Genus" = `Curated genus`,
+              "expedition" = expedition
+              ) %>%
+      unique() %>%
+      filter(Reads >= 100)
+    View(grouped_filt)
 
     
