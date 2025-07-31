@@ -22,7 +22,8 @@ date: "01/2024"
 ## Criando a tabela com as seqs e seus respectivos cabecalhos ----
 
 # fish_ID_tbl_fasta <- fish_ID_tbl %>% 
-fish_ID_tbl_fasta <- grouped_by_ID_BLASTid %>%
+# fish_ID_tbl_fasta <- grouped_by_ID_BLASTid %>%
+fish_ID_tbl_fasta <- raw_results_tbl %>%
   # filter(`Final ID (BLASTn)`%in% c("Poeciliidae sp.")) %>% #### corrigir
   # filter(`Final ID (BLASTn)`%in% c("Astyanax lacustris", "Astyanax paranae", "Astyanax bimaculatus")) %>% 
   # filter(`Final ID (BLASTn)`%in% c("Astyanax bimaculatus", "Piabina argentea")) %>% 
@@ -31,7 +32,7 @@ fish_ID_tbl_fasta <- grouped_by_ID_BLASTid %>%
   # filter(`Final ID (BLASTn)`%in% c("Eigenmannia virescens")) %>%
   # filter(`Final ID (BLASTn)`%in% c("Gymnotus carapo", "Gymnotus sylvius")) %>%
   # filter(`Final ID (BLASTn)`%in% c("Hemigrammus marginatus")) %>%
-  # filter(`Final ID (BLASTn)`%in% c("Hoplias intermedius", "Hoplias malabaricus")) %>%
+  filter(`Final ID (BLASTn)`%in% c("Hoplias intermedius", "Hoplias malabaricus")) %>%
   # filter(`Final ID (BLASTn)`%in% c("Iheringichthys labrosus", "Pimelodus fur", "Pimelodus mysteriosus", "Pimelodus albicans", "Pimelodus maculatus")) %>%
   # filter(`Final ID (BLASTn)`%in% c("Megaleporinus garmani", "Leporinus reinhardt", "Leporinus crassilabris", "Leporinus steindachneri", "Leporinus octofasciatus", "Leporinus piau")) %>%
   # filter(`Final ID (BLASTn)`%in% c("Megaleporinus garmani", "Leporinus reinhardt", "Leporinus crassilabris", "Leporinus steindachneri", "Leporinus octofasciatus", "Leporinus piau", "Leporellus vittatus")) %>%
@@ -40,7 +41,7 @@ fish_ID_tbl_fasta <- grouped_by_ID_BLASTid %>%
   # filter(`Final ID (BLASTn)`%in% c("Coptodon rendalli", "Coptodon zillii", "Oreochromis niloticus", "Oreochromis sp.")) %>%
   # filter(`Final ID (BLASTn)`%in% c("Oreochromis niloticus", "Oreochromis sp.")) %>%
   # filter(`Final ID (BLASTn)`%in% c("Iheringichthys labrosus","Pimelodus fur", "Pimelodus mysteriosus", "Pimelodus albicans", "Pimelodus maculatus")) %>%
-  filter(`Final ID (BLASTn)`%in% c("Pygocentrus nattereri", "Serrasalmus brandtii")) %>%
+  # filter(`Final ID (BLASTn)`%in% c("Pygocentrus nattereri", "Serrasalmus brandtii")) %>%
   # filter(`Final ID (BLASTn)`%in% c("Rhamdia quelen")) %>%
   # filter(`Final ID (BLASTn)`%in% c("Salmo salar", "Brycon orthotaenia")) %>%
   # filter(`Final ID (BLASTn)`%in% c("Trichomycterus sp.", "Astyanax lacustris")) %>%
@@ -52,7 +53,7 @@ fish_ID_tbl_fasta <- grouped_by_ID_BLASTid %>%
   # filter(`Final ID (BLASTn)`%in% c("Astyanax bimaculatus", "Piabina argentea", "Planaltina myersi", "Knodus sp.")) %>%
   # filter(`Final ID (BLASTn)`%in% c("Astyanax lacustris", "Astyanax bimaculatus")) %>%
   # filter(`Final ID (BLASTn)`%in% c("Poecilia latipinna", "Poeciliidae sp.")) %>%
-  filter(`Final ID (BLASTn)`%in% c("Eigenmannia virescens", "Eigenmannia sp.")) %>%
+  # filter(`Final ID (BLASTn)`%in% c("Eigenmannia virescens", "Eigenmannia sp.")) %>%
   # filter(`Final ID (BLASTn)`%in% c("Pseudoplatystoma corruscans", "Pseudoplatystoma reticulatum")) %>%
   # filter(`Final ID (BLASTn)`%in% c("Odontostilbe sp", "Serrapinnus heterodon")) %>%
   mutate(`Final ID (BLASTn)` = gsub(" ", "_", `Final ID (BLASTn)`)) %>% # Unindo os nomes com _
@@ -68,11 +69,12 @@ View(fish_ID_tbl_fasta)
 {
   ASVs_all <- c(rbind(fish_ID_tbl_fasta$header, fish_ID_tbl_fasta$`ASV (Sequence)`)) # Unindo as informacoes em formato FASTA
   # write(ASVs_all, "/home/gabriel/projetos/lagoa_ingleses/results/tree/2023/alinhamentos/ASVs.fas") # Criando o arquivo
-  write(ASVs_all, "/home/gabriel/projetos/lagoa_ingleses/results/tree/2024/distancia_grupos_arvore/ASVs.fas") # Criando o arquivo  
+  # write(ASVs_all, "/home/gabriel/projetos/lagoa_ingleses/results/tree/2024/distancia_grupos_arvore/ASVs.fas") # Criando o arquivo  
+  write(ASVs_all, "/home/gabriel/projetos/LI_paper/results/tree/distance/ASVs.fas") # Criando o arquivo  
 }
 
 # Lendo o FASTA
-algn_in_ASVs_nofilt <- readDNAStringSet(filepath = "/home/gabriel/projetos/lagoa_ingleses/results/tree/2024/distancia_grupos_arvore/ASVs.fas")
+algn_in_ASVs_nofilt <- readDNAStringSet(filepath = "/home/gabriel/projetos/LI_paper/results/tree/distance/ASVs.fas")
 # BrowseSeqs(algn_in_ASVs_nofilt)
 
 {
@@ -85,11 +87,11 @@ algn_in_ASVs_nofilt <- readDNAStringSet(filepath = "/home/gabriel/projetos/lagoa
   # fish_DB_filter <- fish_DB_jun23[names(fish_DB_jun23) %in% c("SF | Oreochromis niloticus | 2266", "SF | Coptodon rendalli | 4861")]
   # fish_DB_filter <- fish_DB_jun23[names(fish_DB_jun23) %in% c("SF | Eigenmannia virescens | 1118", "SF | Eigenmannia virescens | 1119")]
   # fish_DB_filter <- fish_DB_jun23[names(fish_DB_jun23) %in% c("SF | Hemigrammus marginatus | 1382b", "SF | Hemigrammus marginatus | 1382")]
-  # fish_DB_filter <- fish_DB_jun23[names(fish_DB_jun23) %in% c("JQ | Hoplias malabaricus | 7822", "JQ | Hoplias sp | 6630", "SF | Hoplias malabaricus | 1346", "SF | Hoplias malabaricus | 1234", "JQ | Hoplias brasiliensis | 1772", "SF | Hoplias intermedius | 1377")]
+  fish_DB_filter <- fish_DB_jun23[names(fish_DB_jun23) %in% c("JQ | Hoplias malabaricus | 7822", "JQ | Hoplias sp | 6630", "SF | Hoplias malabaricus | 1346", "SF | Hoplias malabaricus | 1234", "JQ | Hoplias brasiliensis | 1772", "SF | Hoplias intermedius | 1377")]
   # fish_DB_filter <- fish_DB_jun23[names(fish_DB_jun23) %in% c("Out | Leporellus vittatus | LC104399.1")]
   # fish_DB_filter <- fish_DB_jun23[names(fish_DB_jun23) %in% c("SF | Myleus micans | 1162", "SF | Myleus micans | 0763", "SF | Colossoma macropomum | 2872", "SF | Colossoma macropomum | 2871", "JQ | Colossoma macropomum | 2871")]
   # fish_DB_filter <- fish_DB_jun23[names(fish_DB_jun23) %in% c("SF | Coptodon rendalli | 4861", "SF | Oreochromis niloticus | 2266")]
-  fish_DB_filter <- fish_DB_jun23[names(fish_DB_jun23) %in% c("SF | Pygocentrus piraya | 1229", "SF | Serrasalmus brandtii | 1230", "JQ | Serrasalmus brandtii | 6261", "JQ | Serrasalmus brandtii | 7890", "SF | Serrasalmus brandtii | 0872")]
+  # fish_DB_filter <- fish_DB_jun23[names(fish_DB_jun23) %in% c("SF | Pygocentrus piraya | 1229", "SF | Serrasalmus brandtii | 1230", "JQ | Serrasalmus brandtii | 6261", "JQ | Serrasalmus brandtii | 7890", "SF | Serrasalmus brandtii | 0872")]
   # fish_DB_filter <- fish_DB_jun23[names(fish_DB_jun23) %in% c("SF | Rhamdia quelen | 1361")]
   # fish_DB_filter <- fish_DB_jun23[names(fish_DB_jun23) %in% c("SF | Trichomycterus sp | 1373")]
   # fish_DB_filter <- fish_DB_jun23[names(fish_DB_jun23) %in% c("SF | Franciscodoras marmoratus | 0708", "JQ | Wertheimeria maculata | 7817", "JQ | Wertheimeria maculata | 7906")]
@@ -129,7 +131,7 @@ dist_ASVs <-
                type = "matrix",
                includeTerminalGaps = FALSE,
                penalizeGapLetterMatches = FALSE,
-               penalizeGapGapMatches = FALSE,
+               # penalizeGapMatches = FALSE,
                # correction = "none",
                correction = "Jukes-Cantor",
                processors = 1,
